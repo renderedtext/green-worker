@@ -45,8 +45,8 @@ end
 # when running `mix release`, the first release in the file
 # will be used by default
 
-release :green_worker do
-  set version: current_version(:green_worker)
+release :green_workers do
+  set version: current_version(:green_workers)
   set applications: [
     :runtime_tools,
     :inets,

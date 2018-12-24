@@ -10,13 +10,15 @@ defmodule GreenWorker.Mixfile do
      elixir: "~> 1.6",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+     elixirc_paths: elixirc_paths(Mix.env),
      deps: deps()]
   end
 
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
   def application do
-    # Specify extra applications you'll use from Erlang/Elixir
-    [extra_applications: [:logger],
-     mod: {GreenWorker.Application, []}]
+    []
   end
 
   defp deps do
@@ -26,7 +28,10 @@ defmodule GreenWorker.Mixfile do
       {:ecto, "~> 3.0"},
       {:ecto_sql, "~> 3.0"},
       {:credo, "~> 0.8", only: [:dev, :test], runtime: false},
+      {:pubsub, "~> 1.0", only: [:dev, :test]},
       {:uuid, "~> 1.1"},
+      {:libcluster, "~> 3.0"},
+      {:swarm, "~> 3.3"},
     ]
   end
 end

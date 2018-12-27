@@ -29,6 +29,14 @@ defmodule GreenWorker do
         GenServer.start_link(__MODULE__, id, name: name(id))
       end
 
+      def get_config do
+        %{
+          schema: unquote(schema),
+          repo: unquote(repo),
+          changeset: unquote(changeset)
+        }
+      end
+
       def get_context(id) do
         GenServer.call(name(id), :get_context)
       end
@@ -105,6 +113,24 @@ defmodule GreenWorker do
   end
 
   @doc """
+    Persist initial context into DB and start worker.
+
+    Context is sanitized through changeset specified in `module` before it is
+    persisted.
+  """
+  def store_context_and_start_supervised(module, ctx) do
+    %{schema: schema, repo: repo, changeset: {m, f}} = module.get_config()
+
+    change = apply(m, f, [struct(schema), to_map(ctx)])
+
+    if change.valid? do
+      do_store_context_and_start_supervised(repo, change, module, ctx.id)
+    else
+      {:error, change}
+    end
+  end
+
+  @doc """
   Start GreenWorker process under dynamic supervisor
 
   ## Example
@@ -133,6 +159,12 @@ defmodule GreenWorker do
 
     from(s in schema, where: s.state != "done")
     |> repo.all()
+  end
+
+  defp do_store_context_and_start_supervised(repo, change, module, id) do
+    {:ok, _} = change |> repo.insert()
+
+    start_supervised(module, id)
   end
 
   defp supervisor_name(module), do: :"#{module}.Supervisor"

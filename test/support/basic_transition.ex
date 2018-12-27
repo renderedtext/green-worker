@@ -34,6 +34,7 @@ defmodule Support.BasicTransition do
     ctx     |> IO.inspect(label: "GGGGGGGGGGGGGGG state exit")
   end
 
+  @impl true
   def handle_info({id, :can_advance}, ctx) do
     handle_context(id)
 

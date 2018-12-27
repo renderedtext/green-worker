@@ -79,6 +79,33 @@ defmodule GreenWorkerTest do
     Supervisor.stop(sup)
   end
 
+  test "store_context_and_start_supervised - success" do
+    id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
+    ctx = %{id: id1, state: "init"}
+
+    assert {:ok, sup} = Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
+
+    assert {:ok, _} = GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+
+    assert %{schema: schema} = Support.NoActionWorker.get_config
+    assert struct(schema, ctx) == Support.NoActionWorker.get_context(id1)
+
+    Supervisor.stop(sup)
+  end
+
+  test "store_context_and_start_supervised - fail changeset validation" do
+    id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
+    ctx = %{id: id1}
+
+    assert {:ok, sup} = Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
+
+    assert {:error, _} = GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+
+    catch_exit(Support.NoActionWorker.get_context(id1))
+
+    Supervisor.stop(sup)
+  end
+
   defp wait_for(id, state) do
     receive do
       {^id, ^state} -> :ok

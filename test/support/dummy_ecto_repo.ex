@@ -32,4 +32,11 @@ defmodule Support.DummyEctoRepo do
     {:ok, changeset}
     |> IO.inspect(label: "AAAAAAAAAAAAAAAAAAAAAAAAAAA persisted changeset")
   end
+
+  def insert(changeset),
+    do: do_insert(changeset.valid?, changeset)
+        |> IO.inspect(label: "BBBBBBBBBBBBBBBBBBBBBBBBBinsert persisted changeset")
+
+  def do_insert(_valid = true, changeset), do: {:ok, changeset}
+  def do_insert(_valid = false, changeset), do: {:error, changeset}
 end

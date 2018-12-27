@@ -1,7 +1,7 @@
 defmodule Support.DummyEctoRepo do
 
 
-  def get(schema, id) do
+  def get_by(schema, [id: id]) do
     {schema, id}
     |>IO.inspect(label: "WWWWWWWWWWWWW query")
 

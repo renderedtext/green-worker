@@ -19,6 +19,8 @@ defmodule GreenWorker do
     # Expects `{M,F}` tuple; default `nil`
     # If not nil calls `M.F/2`
     changeset         = Util.get_optional_field(opts, :changeset)
+    # Uniquely indexed field name; default `:id`
+    key               = Util.get_optional_field(opts, :key, :id)
 
     quote do
       @behaviour GreenWorker.Behaviour
@@ -33,7 +35,8 @@ defmodule GreenWorker do
         %{
           schema: unquote(schema),
           repo: unquote(repo),
-          changeset: unquote(changeset)
+          changeset: unquote(changeset),
+          key: unquote(key)
         }
       end
 
@@ -47,8 +50,8 @@ defmodule GreenWorker do
 
       @impl true
       def init(id) do
-        ctx = GreenWorker.load_context(id, unquote(schema), unquote(repo))
-        |>IO.inspect(label: "QQQQQQQQQQQQQQQQ")
+        Keyword.put([], unquote(key), id)
+        |> GreenWorker.load_context(unquote(schema), unquote(repo))
         |> case do
           nil ->
             {:id_not_found, id}
@@ -96,8 +99,7 @@ defmodule GreenWorker do
         def init(gw_name) do
           dynamic_supervisor_init_args = [
             gw_module: ContainingModule,
-            schema: unquote(schema),
-            repo: unquote(repo)
+            config: ContainingModule.get_config(),
           ]
 
           children = [
@@ -141,8 +143,8 @@ defmodule GreenWorker do
     DynamicSupervisor.start_child(supervisor_name(module), {module, id})
   end
 
-  def load_context(id, schema, repo) do
-    repo.get(schema, id)
+  def load_context(query_term, schema, repo) do
+    repo.get_by(schema, query_term)
   end
 
   def store_context(ctx, new_ctx, changeset, repo) do
@@ -162,9 +164,13 @@ defmodule GreenWorker do
   end
 
   defp do_store_context_and_start_supervised(repo, change, module, id) do
-    {:ok, _} = change |> repo.insert()
-
-    start_supervised(module, id)
+    case change |> repo.insert() do
+      {:ok, _} ->
+        start_supervised(module, id)
+        |> IO.inspect(label: "DDDDDDDDDDDDDDDDDDD change")
+      {:error, change} ->
+        {:error, change}
+    end
   end
 
   defp supervisor_name(module), do: :"#{module}.Supervisor"

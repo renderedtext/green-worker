@@ -31,6 +31,11 @@ defmodule GreenWorker do
         GenServer.start_link(__MODULE__, id, name: name(id))
       end
 
+      def child_spec(args) do
+        super(args)
+        |> Map.put(:restart, :transient)
+      end
+
       def get_config do
         %{
           schema: unquote(schema),
@@ -40,7 +45,11 @@ defmodule GreenWorker do
         }
       end
 
-      def get_context(id) do
+      @doc """
+      Return context if worker process is alive or
+      call exit in the caller process if worker process is not alive.
+      """
+      def get_context!(id) do
         GenServer.call(name(id), :get_context)
       end
 
@@ -155,6 +164,22 @@ defmodule GreenWorker do
       {:error, change} ->
         {:error, change}
     end
+  end
+
+  @doc """
+  Start worker if not running and return context.
+
+  If worker start fails, return error.
+  """
+  def get_context(module, id) do
+    module.get_context!(id)
+  catch
+    :exit, {:noproc, {GenServer, :call, b}} ->
+      case start_supervised(module, id) do
+        {:ok, _} -> module.get_context!(id)
+
+        error = {:error, _} -> error
+      end
   end
 
   defp supervisor_name(module), do: :"#{module}.Supervisor"

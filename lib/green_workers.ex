@@ -72,7 +72,7 @@ defmodule GreenWorker do
         new_ctx = context_handler(ctx)
 
         if new_ctx != ctx do
-          handle_context(ctx.id)
+          handle_context(get_id(ctx))
 
           {:ok, _} = GreenWorker.store_context(ctx, new_ctx, unquote(changeset), unquote(repo))
         end
@@ -81,6 +81,8 @@ defmodule GreenWorker do
       end
 
       defp name(id), do: :"#{__MODULE__}_#{id}"
+
+      defp get_id(ctx), do: GreenWorker.Internal.get_id(ctx, unquote(key))
 
       ##### Supervisor
 
@@ -121,12 +123,13 @@ defmodule GreenWorker do
     persisted.
   """
   def store_context_and_start_supervised(module, ctx) do
-    %{schema: schema, repo: repo, changeset: {m, f}} = module.get_config()
+    %{schema: schema, repo: repo, changeset: {m, f}, key: key} = module.get_config()
 
     change = apply(m, f, [struct(schema), to_map(ctx)])
 
     if change.valid? do
-      do_store_context_and_start_supervised(repo, change, module, ctx.id)
+      do_store_context_and_start_supervised(repo, change, module,
+        GreenWorker.Internal.get_id(ctx, key))
     else
       {:error, change}
     end

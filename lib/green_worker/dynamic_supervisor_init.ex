@@ -23,7 +23,7 @@ defmodule GreenWorker.DynamicSupervisorInit do
     gw_module
     |> IO.inspect(label: "ZZZZZZZZZZZZZZ gw_module")
 
-    GreenWorker.get_all_non_finished_workers(config.schema, config.repo)
+    GreenWorker.Internal.get_all_non_finished_workers(config.schema, config.repo)
     |> Enum.map(fn ctx -> GreenWorker.start_supervised(gw_module, Map.get(ctx, config.key)) end)
   end
 

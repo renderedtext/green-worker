@@ -51,7 +51,7 @@ defmodule GreenWorker do
       @impl true
       def init(id) do
         Keyword.put([], unquote(key), id)
-        |> GreenWorker.load_context(unquote(schema), unquote(repo))
+        |> GreenWorker.Internal.load_context(unquote(schema), unquote(repo))
         |> case do
           nil ->
             {:id_not_found, id}
@@ -74,7 +74,8 @@ defmodule GreenWorker do
         if new_ctx != ctx do
           handle_context(get_id(ctx))
 
-          {:ok, _} = GreenWorker.store_context(ctx, new_ctx, unquote(changeset), unquote(repo))
+          {:ok, _} = GreenWorker.Internal.store_context(
+            ctx, new_ctx, unquote(changeset), unquote(repo))
         end
 
         {:noreply, new_ctx}
@@ -125,7 +126,7 @@ defmodule GreenWorker do
   def store_context_and_start_supervised(module, ctx) do
     %{schema: schema, repo: repo, changeset: {m, f}, key: key} = module.get_config()
 
-    change = apply(m, f, [struct(schema), to_map(ctx)])
+    change = GreenWorker.Internal.apply_changeset(m, f, [struct(schema), ctx])
 
     if change.valid? do
       do_store_context_and_start_supervised(repo, change, module,
@@ -146,26 +147,6 @@ defmodule GreenWorker do
     DynamicSupervisor.start_child(supervisor_name(module), {module, id})
   end
 
-  def load_context(query_term, schema, repo) do
-    repo.get_by(schema, query_term)
-  end
-
-  def store_context(ctx, new_ctx, changeset, repo) do
-    case changeset do
-      nil -> new_ctx
-
-      {m, f} -> apply(m, f, [ctx, to_map(new_ctx)])
-    end
-    |> repo.update()
-  end
-
-  def get_all_non_finished_workers(schema, repo) do
-    import Ecto.Query
-
-    from(s in schema, where: s.state != "done")
-    |> repo.all()
-  end
-
   defp do_store_context_and_start_supervised(repo, change, module, id) do
     case change |> repo.insert() do
       {:ok, _} ->
@@ -177,7 +158,4 @@ defmodule GreenWorker do
   end
 
   defp supervisor_name(module), do: :"#{module}.Supervisor"
-
-  defp to_map(%_{} = v), do: Map.from_struct(v)
-  defp to_map(%{} = v), do: v
 end

@@ -11,12 +11,12 @@ defmodule GreenWorker.Internal do
     case changeset do
       nil -> new_ctx
 
-      {m, f} -> apply_changeset(m, f, [ctx, to_map(new_ctx)])
+      {m, f} -> call_changeset(m, f, [ctx, to_map(new_ctx)])
     end
     |> repo.update()
   end
 
-  def apply_changeset(m, f, [data, params]) do
+  def call_changeset(m, f, [data, params]) do
     apply(m, f, [data, to_map(params)])
   end
 
@@ -26,6 +26,8 @@ defmodule GreenWorker.Internal do
     from(s in schema, where: s.state != "done")
     |> repo.all()
   end
+
+  def name(module, id), do: :"#{module}_#{id}"
 
   defp to_map(%_{} = v), do: Map.from_struct(v)
   defp to_map(%{} = v), do: v

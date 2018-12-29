@@ -9,7 +9,7 @@ defmodule GreenWorkerTest do
     assert {:ok, sup} = Supervisor.start_link(Support.Minimal.Supervisor, strategy: :one_for_one)
     assert {:ok, pid} = GreenWorker.start_supervised(Support.Minimal, id1)
     assert is_pid(pid)
-    assert {:error, {:already_started, _}} = GreenWorker.start_supervised(Support.Minimal, id1)
+    assert {:ok, ^pid} = GreenWorker.start_supervised(Support.Minimal, id1)
     assert {:ok, _} = GreenWorker.start_supervised(Support.Minimal, id2)
 
     Supervisor.stop(sup)
@@ -86,6 +86,38 @@ defmodule GreenWorkerTest do
     assert {:ok, sup} = Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
 
     assert {:ok, _} = GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+
+    assert %{schema: schema} = Support.NoActionWorker.get_config
+    assert struct(schema, ctx) == Support.NoActionWorker.get_context!(id1)
+
+    Supervisor.stop(sup)
+  end
+
+  test "store_context_and_start_supervised - idempotent - if process is running" do
+    id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
+    ctx = %{id: id1, state: "init"}
+
+    assert {:ok, sup} = Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
+
+    assert {:ok, pid} = GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+    assert {:ok, ^pid} = GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+
+    assert %{schema: schema} = Support.NoActionWorker.get_config
+    assert struct(schema, ctx) == Support.NoActionWorker.get_context!(id1)
+
+    Supervisor.stop(sup)
+  end
+
+  test "store_context_and_start_supervised - idempotent - if process is not running" do
+    id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
+    ctx = %{id: id1, state: "init"}
+
+    assert {:ok, sup} = Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
+
+    assert {:ok, pid} = GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+    GenServer.stop(pid)
+    assert {:ok, pid2} = GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+    assert pid != pid2
 
     assert %{schema: schema} = Support.NoActionWorker.get_config
     assert struct(schema, ctx) == Support.NoActionWorker.get_context!(id1)

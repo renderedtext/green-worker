@@ -90,7 +90,7 @@ defmodule GreenWorker do
         {:noreply, new_ctx}
       end
 
-      defp name(id), do: :"#{__MODULE__}_#{id}"
+      defp name(id), do: GreenWorker.Internal.name(__MODULE__, id)
 
       defp get_id(ctx), do: GreenWorker.Internal.get_id(ctx, unquote(key))
 
@@ -133,36 +133,34 @@ defmodule GreenWorker do
     persisted.
   """
   def store_context_and_start_supervised(module, ctx) do
-    %{schema: schema, repo: repo, changeset: {m, f}, key: key} = module.get_config()
+    %{schema: schema, repo: repo, changeset: changeset, key: key} = module.get_config()
 
-    change = GreenWorker.Internal.apply_changeset(m, f, [struct(schema), ctx])
+    id = GreenWorker.Internal.get_id(ctx, key)
 
-    if change.valid? do
-      do_store_context_and_start_supervised(repo, change, module,
-        GreenWorker.Internal.get_id(ctx, key))
+    if pid = whereis(module, id) do
+      {:ok, pid}
     else
-      {:error, change}
+      store_context(ctx, changeset, schema, repo)
+      |> do_start_supervised(module, id)
     end
+
   end
 
   @doc """
-  Start GreenWorker process under dynamic supervisor
+  Start GreenWorker process under dynamic supervisor.
+
+  Call is idempotent - if called for existing process returns pid of
+  previously started process.
 
   ## Example
 
       {:ok, pid} = start_supervised(WorkerModule, "worker_unique_id")
   """
   def start_supervised(module, id) when is_binary(id) do
-    DynamicSupervisor.start_child(supervisor_name(module), {module, id})
-  end
-
-  defp do_store_context_and_start_supervised(repo, change, module, id) do
-    case change |> repo.insert() do
-      {:ok, _} ->
-        start_supervised(module, id)
-        |> IO.inspect(label: "DDDDDDDDDDDDDDDDDDD change")
-      {:error, change} ->
-        {:error, change}
+    if pid = whereis(module, id) do
+      {:ok, pid}
+    else
+      DynamicSupervisor.start_child(supervisor_name(module), {module, id})
     end
   end
 
@@ -174,12 +172,45 @@ defmodule GreenWorker do
   def get_context(module, id) do
     module.get_context!(id)
   catch
-    :exit, {:noproc, {GenServer, :call, b}} ->
+    :exit, {:noproc, {GenServer, :call, _}} ->
       case start_supervised(module, id) do
         {:ok, _} -> module.get_context!(id)
 
         error = {:error, _} -> error
       end
+  end
+
+  @doc """
+    Return pid of specified worker if running or nil otherwise.
+  """
+  def whereis(module, id) do
+    GreenWorker.Internal.name(module, id)
+    |> Process.whereis()
+  end
+
+  defp store_context(ctx, {m, f}, schema, repo) do
+    change = GreenWorker.Internal.call_changeset(m, f, [struct(schema), ctx])
+    |> IO.inspect(label: "DDDDDDDDDDDDDDDDDDD change")
+
+    if change.valid? do
+      change |> repo.insert()
+      |> IO.inspect(label: "DDDDDDDDDDDDDDDDDDD insert")
+    else
+      {:error, change}
+    end
+  end
+
+  defp do_start_supervised(insert_response, module, id) do
+    insert_response
+    |> case do
+      {:ok, _} ->
+        start_supervised(module, id)
+        |> IO.inspect(label: "DDDDDDDDDDDDDDDDDDD start?")
+      # {:error, %{action: :insert, errors: [{:request_token, {_, [constraint: :unique, _]}}]}} ->
+      {:error, change} ->
+        {:error, change}
+        |> IO.inspect(label: "GGGGGGGGGGGGGGGGGGGGGGGG change")
+    end
   end
 
   defp supervisor_name(module), do: :"#{module}.Supervisor"

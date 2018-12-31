@@ -140,15 +140,15 @@ defmodule GreenWorker do
     if pid = whereis(module, id) do
       {:ok, pid}
     else
-      store_context(ctx, changeset, schema, repo)
-      |> start_supervised_if(module, id)
+      do_store_context(ctx, changeset, schema, repo)
+      |> start_supervised_if(module, id, key)
     end
   end
 
   def store_context(module, ctx) do
-    %{schema: schema, repo: repo, changeset: changeset, key: key} = module.get_config()
+    %{schema: schema, repo: repo, changeset: changeset} = module.get_config()
 
-    store_context(ctx, changeset, schema, repo)
+    do_store_context(ctx, changeset, schema, repo)
   end
 
   @doc """
@@ -193,7 +193,7 @@ defmodule GreenWorker do
     |> Process.whereis()
   end
 
-  defp store_context(ctx, {m, f}, schema, repo) do
+  defp do_store_context(ctx, {m, f}, schema, repo) do
     change = GreenWorker.Internal.call_changeset(m, f, [struct(schema), ctx])
     |> IO.inspect(label: "DDDDDDDDDDDDDDDDDDD change")
 
@@ -205,13 +205,14 @@ defmodule GreenWorker do
     end
   end
 
-  defp start_supervised_if(insert_response, module, id) do
+  defp start_supervised_if(insert_response, module, id, key) do
     insert_response
     |> case do
       {:ok, _} ->
         start_supervised(module, id)
         |> IO.inspect(label: "DDDDDDDDDDDDDDDDDDD start?")
-      # {:error, %{action: :insert, errors: [{:request_token, {_, [constraint: :unique, _]}}]}} ->
+      {:error, %{action: :insert, errors: [{^key, {"has already been taken", _}}]}} ->
+        start_supervised(module, id)
       {:error, change} ->
         {:error, change}
         |> IO.inspect(label: "GGGGGGGGGGGGGGGGGGGGGGGG change")

@@ -146,7 +146,8 @@ defmodule GreenWorkerTest do
     assert pid != pid2
 
     assert %{schema: schema} = Support.NoActionWorker.get_config
-    assert struct(schema, ctx) == Support.NoActionWorker.get_context!(id1)
+    expected = struct(schema, ctx)
+    assert expected = Support.NoActionWorker.get_context!(id1)
 
     Supervisor.stop(sup)
   end

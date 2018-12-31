@@ -141,7 +141,8 @@ defmodule GreenWorker do
       {:ok, pid}
     else
       do_store_context(ctx, changeset, schema, repo)
-      |> start_supervised_if(module, id, key)
+      |> store_context_idempotency(key)
+      |> start_supervised_if(module, id)
     end
   end
 
@@ -205,19 +206,17 @@ defmodule GreenWorker do
     end
   end
 
-  defp start_supervised_if(store_response, module, id, key) do
-    store_response
-    |> case do
-      {:ok, _} ->
-        start_supervised(module, id)
-        |> IO.inspect(label: "DDDDDDDDDDDDDDDDDDD start?")
-      {:error, %{action: :insert, errors: [{^key, {"has already been taken", _}}]}} ->
-        start_supervised(module, id)
-      {:error, change} ->
-        {:error, change}
-        |> IO.inspect(label: "GGGGGGGGGGGGGGGGGGGGGGGG change")
-    end
+  defp store_context_idempotency(store_resp = {:ok, _}, _key), do: store_resp
+  defp store_context_idempotency(
+    {:error, %{action: :insert, errors: [{k, {"has already been taken", _}}]}},
+    key
+  ) when k == key do
+    {:ok, :duplicate}
   end
+  defp store_context_idempotency(store_resp = {:error, _}, _key), do: store_resp
+
+  defp start_supervised_if({:ok, _}, module, id), do: start_supervised(module, id)
+  defp start_supervised_if(error = {:error, _}, _module, _id), do: error
 
   defp supervisor_name(module), do: :"#{module}.Supervisor"
 end

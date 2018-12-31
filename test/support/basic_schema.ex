@@ -1,9 +1,9 @@
 defmodule Support.BasicSchema do
   use Ecto.Schema
 
-  @primary_key false
-  embedded_schema do
-    field :id,              Ecto.UUID
+  @primary_key {:id, Ecto.UUID, []}
+  schema "basic" do
+    # field :id,              Ecto.UUID
     field :state,           :string
     field :result,          :string
     field :result_reason,   :string
@@ -17,6 +17,7 @@ defmodule Support.BasicSchema do
      basic_type
      |> cast(params, @required_fields)
      |> validate_required(@required_fields)
+     |> unique_constraint(:id, name: :basic_pkey)
    end
 
 end

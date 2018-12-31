@@ -1,7 +1,8 @@
 defmodule Support.Minimal do
   use GreenWorker,
   schema: Support.BasicSchema,
-  repo: Support.DummyEctoRepo
+  repo: Support.EctoRepo,
+  changeset: {Support.BasicSchema, :changeset}
 
   @impl true
   def context_handler(ctx = %{:state => "init"}) do

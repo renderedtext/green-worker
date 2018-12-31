@@ -18,7 +18,7 @@ defmodule GreenWorker do
     repo              = Util.get_mandatory_field(opts, :repo)
     # Expects `{M,F}` tuple; default `nil`
     # If not nil calls `M.F/2`
-    changeset         = Util.get_optional_field(opts, :changeset)
+    changeset         = Util.get_mandatory_field(opts, :changeset)
     # Uniquely indexed field name; default `:id`
     key               = Util.get_optional_field(opts, :key, :id)
 
@@ -141,9 +141,14 @@ defmodule GreenWorker do
       {:ok, pid}
     else
       store_context(ctx, changeset, schema, repo)
-      |> do_start_supervised(module, id)
+      |> start_supervised_if(module, id)
     end
+  end
 
+  def store_context(module, ctx) do
+    %{schema: schema, repo: repo, changeset: changeset, key: key} = module.get_config()
+
+    store_context(ctx, changeset, schema, repo)
   end
 
   @doc """
@@ -200,7 +205,7 @@ defmodule GreenWorker do
     end
   end
 
-  defp do_start_supervised(insert_response, module, id) do
+  defp start_supervised_if(insert_response, module, id) do
     insert_response
     |> case do
       {:ok, _} ->

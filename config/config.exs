@@ -1,5 +1,7 @@
 use Mix.Config
 
+config :green_worker, ecto_repos: [GreenWorker.EctoRepo]
+
 # config :watchman,
 #     host: "statsd",
 #     port: 8125,

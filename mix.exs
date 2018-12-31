@@ -18,7 +18,8 @@ defmodule GreenWorker.Mixfile do
   defp elixirc_paths(_), do: ["lib"]
 
   def application do
-    []
+    [extra_applications: [:logger],
+     mod: {GreenWorker.Application, []}]
   end
 
   defp deps do

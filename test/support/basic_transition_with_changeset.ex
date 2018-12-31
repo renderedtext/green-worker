@@ -1,7 +1,7 @@
 defmodule Support.BasicTransitionWithChangeset do
   use GreenWorker,
   schema: Support.BasicSchema,
-  repo: Support.DummyEctoRepo,
+  repo: Support.EctoRepo,
   changeset: {Support.BasicSchema, :changeset}
 
   @impl true

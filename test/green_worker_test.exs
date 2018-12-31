@@ -10,7 +10,9 @@ defmodule GreenWorkerTest do
     {:ok, %{}}
   end
 
-  test "start GreenWorker supervisor tree and children" do
+  test "start_supervised - success" do
+    assert {:ok, sup} = Supervisor.start_link(Support.Minimal.Supervisor, strategy: :one_for_one)
+
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx1 = %{id: id1, state: "init"}
     assert {:ok, _} = GreenWorker.store_context(Support.BasicTransitionWithChangeset, ctx1)
@@ -18,7 +20,6 @@ defmodule GreenWorkerTest do
     ctx2 = %{id: id2, state: "done"}
     assert {:ok, _} = GreenWorker.store_context(Support.BasicTransitionWithChangeset, ctx2)
 
-    assert {:ok, sup} = Supervisor.start_link(Support.Minimal.Supervisor, strategy: :one_for_one)
     assert {:ok, pid} = GreenWorker.start_supervised(Support.Minimal, id1)
     assert is_pid(pid)
     assert {:ok, ^pid} = GreenWorker.start_supervised(Support.Minimal, id1)
@@ -27,14 +28,14 @@ defmodule GreenWorkerTest do
     Supervisor.stop(sup)
   end
 
-  test "state transitions" do
+  test "start_supervised - state transitions" do
     PubSub.subscribe(self(), BasicTransition)
+    assert {:ok, sup} = Supervisor.start_link(Support.BasicTransition.Supervisor, strategy: :one_for_one)
 
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx1 = %{id: id1, state: "init"}
     assert {:ok, _} = GreenWorker.store_context(Support.BasicTransitionWithChangeset, ctx1)
 
-    assert {:ok, sup} = Supervisor.start_link(Support.BasicTransition.Supervisor, strategy: :one_for_one)
     assert {:ok, _} = GreenWorker.start_supervised(Support.BasicTransition, id1)
 
     wait_for(id1, "pending")
@@ -71,34 +72,12 @@ defmodule GreenWorkerTest do
     Supervisor.stop(sup)
   end
 
-  test "start worker for non-existent id" do
+  test "start_supervised - start worker for non-existent id" do
     id1 = UUID.uuid1()
 
     assert {:ok, sup} = Supervisor.start_link(Support.BasicTransition.Supervisor, strategy: :one_for_one)
     assert {:error, {:bad_return_value, {:id_not_found, _}}} =
       GreenWorker.start_supervised(Support.BasicTransition, id1)
-
-    Supervisor.stop(sup)
-  end
-
-  test "automatic dynamic supervisor initialization with changeset" do
-    PubSub.subscribe(self(), BasicTransitionWithChangeset)
-
-    id1 = "86781246-0847-0000-0000-123456789012"
-    ctx1 = %{id: id1, state: "init"}
-    assert {:ok, _} = GreenWorker.store_context(Support.BasicTransitionWithChangeset, ctx1)
-
-    id2 = "86781246-0847-0000-0001-123456789012"
-    ctx2 = %{id: id2, state: "init"}
-    assert {:ok, _} = GreenWorker.store_context(Support.BasicTransitionWithChangeset, ctx2)
-
-    assert {:ok, sup} = Supervisor.start_link(Support.BasicTransitionWithChangeset.Supervisor, strategy: :one_for_one)
-
-    wait_for(id1, "done")
-    wait_for(id2, "done")
-
-    assert %{state: "done"} = Support.BasicTransitionWithChangeset.get_context!(id1)
-    assert %{state: "done"} = Support.BasicTransitionWithChangeset.get_context!(id2)
 
     Supervisor.stop(sup)
   end

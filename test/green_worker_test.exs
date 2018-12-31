@@ -30,7 +30,9 @@ defmodule GreenWorkerTest do
 
   test "start_supervised - state transitions" do
     PubSub.subscribe(self(), BasicTransition)
-    assert {:ok, sup} = Supervisor.start_link(Support.BasicTransition.Supervisor, strategy: :one_for_one)
+
+    assert {:ok, sup} =
+             Supervisor.start_link(Support.BasicTransition.Supervisor, strategy: :one_for_one)
 
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx1 = %{id: id1, state: "init"}
@@ -58,7 +60,8 @@ defmodule GreenWorkerTest do
     ctx2 = %{id: id2, state: "init"}
     assert {:ok, _} = GreenWorker.store_context(Support.BasicTransitionWithChangeset, ctx2)
 
-    assert {:ok, sup} = Supervisor.start_link(Support.BasicTransition.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} =
+             Supervisor.start_link(Support.BasicTransition.Supervisor, strategy: :one_for_one)
 
     PubSub.publish(BasicTransitionToWorker, {id1, :can_advance})
     PubSub.publish(BasicTransitionToWorker, {id2, :can_advance})
@@ -75,9 +78,11 @@ defmodule GreenWorkerTest do
   test "start_supervised - start worker for non-existent id" do
     id1 = UUID.uuid1()
 
-    assert {:ok, sup} = Supervisor.start_link(Support.BasicTransition.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} =
+             Supervisor.start_link(Support.BasicTransition.Supervisor, strategy: :one_for_one)
+
     assert {:error, {:bad_return_value, {:id_not_found, _}}} =
-      GreenWorker.start_supervised(Support.BasicTransition, id1)
+             GreenWorker.start_supervised(Support.BasicTransition, id1)
 
     Supervisor.stop(sup)
   end
@@ -86,11 +91,12 @@ defmodule GreenWorkerTest do
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx = %{id: id1, state: "init"}
 
-    assert {:ok, sup} = Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} =
+             Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
 
     assert {:ok, _} = GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
 
-    assert %{schema: schema} = Support.NoActionWorker.get_config
+    assert %{schema: schema} = Support.NoActionWorker.get_config()
     expected = struct(schema, ctx)
     assert expected = Support.NoActionWorker.get_context!(id1)
 
@@ -101,12 +107,16 @@ defmodule GreenWorkerTest do
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx = %{id: id1, state: "init"}
 
-    assert {:ok, sup} = Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} =
+             Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
 
-    assert {:ok, pid} = GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
-    assert {:ok, ^pid} = GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+    assert {:ok, pid} =
+             GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
 
-    assert %{schema: schema} = Support.NoActionWorker.get_config
+    assert {:ok, ^pid} =
+             GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+
+    assert %{schema: schema} = Support.NoActionWorker.get_config()
     expected = struct(schema, ctx)
     assert expected = Support.NoActionWorker.get_context!(id1)
 
@@ -117,14 +127,20 @@ defmodule GreenWorkerTest do
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx = %{id: id1, state: "init"}
 
-    assert {:ok, sup} = Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} =
+             Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
 
-    assert {:ok, pid} = GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+    assert {:ok, pid} =
+             GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+
     GenServer.stop(pid)
-    assert {:ok, pid2} = GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+
+    assert {:ok, pid2} =
+             GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+
     assert pid != pid2
 
-    assert %{schema: schema} = Support.NoActionWorker.get_config
+    assert %{schema: schema} = Support.NoActionWorker.get_config()
     expected = struct(schema, ctx)
     assert expected = Support.NoActionWorker.get_context!(id1)
 
@@ -135,9 +151,11 @@ defmodule GreenWorkerTest do
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx = %{id: id1}
 
-    assert {:ok, sup} = Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} =
+             Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
 
-    assert {:error, _} = GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+    assert {:error, _} =
+             GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
 
     catch_exit(Support.NoActionWorker.get_context!(id1))
 
@@ -148,9 +166,17 @@ defmodule GreenWorkerTest do
     id1 = "c6d81146-0847-11e9-b6f4-482ae31adfd4"
     ctx = %{id: id1, state: "done"}
 
-    assert {:ok, sup} = Supervisor.start_link(Support.BasicTransitionWithChangeset.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} =
+             Supervisor.start_link(
+               Support.BasicTransitionWithChangeset.Supervisor,
+               strategy: :one_for_one
+             )
 
-    assert {:ok, pid} = GreenWorker.store_context_and_start_supervised(Support.BasicTransitionWithChangeset, ctx)
+    assert {:ok, pid} =
+             GreenWorker.store_context_and_start_supervised(
+               Support.BasicTransitionWithChangeset,
+               ctx
+             )
 
     assert %{} = Support.BasicTransitionWithChangeset.get_context!(id1)
 
@@ -169,12 +195,16 @@ defmodule GreenWorkerTest do
     id = UUID.uuid1()
     ctx = %{id: id, state: "done"}
 
-    assert {:ok, sup} = Supervisor.start_link(Support.BasicTransitionWithChangeset.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} =
+             Supervisor.start_link(
+               Support.BasicTransitionWithChangeset.Supervisor,
+               strategy: :one_for_one
+             )
 
     catch_exit(Support.BasicTransitionWithChangeset.get_context!(id))
 
     assert {:error, {_, {:id_not_found, _}}} =
-      GreenWorker.get_context(Support.BasicTransitionWithChangeset, id)
+             GreenWorker.get_context(Support.BasicTransitionWithChangeset, id)
 
     Supervisor.stop(sup)
   end

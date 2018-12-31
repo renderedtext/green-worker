@@ -11,5 +11,4 @@ defmodule Support.EctoRepo do
 
     {:ok, Keyword.put(config, :url, url)}
   end
-
 end

@@ -14,15 +14,15 @@ defmodule GreenWorker.Application do
     Supervisor.start_link(children(), opts)
   end
 
-if Mix.env == :test do
-  defp children do
-    [
-      Support.EctoRepo,
-    ]
+  if Mix.env() == :test do
+    defp children do
+      [
+        Support.EctoRepo
+      ]
+    end
+  else
+    defp children do
+      []
+    end
   end
-else
-  defp children do
-    []
-  end
-end
 end

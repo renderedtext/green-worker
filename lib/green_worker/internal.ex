@@ -10,7 +10,6 @@ defmodule GreenWorker.Internal do
   def store_context(ctx, new_ctx, changeset, repo) do
     case changeset do
       nil -> new_ctx
-
       {m, f} -> call_changeset(m, f, [ctx, to_map(new_ctx)])
     end
     |> repo.update()

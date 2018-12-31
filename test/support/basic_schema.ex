@@ -4,9 +4,9 @@ defmodule Support.BasicSchema do
   @primary_key {:id, Ecto.UUID, []}
   schema "basic" do
     # field :id,              Ecto.UUID
-    field :state,           :string
-    field :result,          :string
-    field :result_reason,   :string
+    field(:state, :string)
+    field(:result, :string)
+    field(:result_reason, :string)
   end
 
   import Ecto.Changeset
@@ -14,10 +14,9 @@ defmodule Support.BasicSchema do
   @required_fields ~w(id state)a
 
   def changeset(basic_type, params \\ %{}) do
-     basic_type
-     |> cast(params, @required_fields)
-     |> validate_required(@required_fields)
-     |> unique_constraint(:id, name: :basic_pkey)
-   end
-
+    basic_type
+    |> cast(params, @required_fields)
+    |> validate_required(@required_fields)
+    |> unique_constraint(:id, name: :basic_pkey)
+  end
 end

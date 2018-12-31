@@ -8,19 +8,19 @@ defmodule GreenWorker do
   defmodule Behaviour do
     @moduledoc false
 
-    @callback context_handler(Map.t) :: Ecto.Query.t()
+    @callback context_handler(Map.t()) :: Ecto.Query.t()
   end
 
   defmacro __using__(opts) do
     # Module name representing Ecto schema to load/store context
-    schema            = Util.get_mandatory_field(opts, :schema)
+    schema = Util.get_mandatory_field(opts, :schema)
     # Module name representingEecto repo
-    repo              = Util.get_mandatory_field(opts, :repo)
+    repo = Util.get_mandatory_field(opts, :repo)
     # Expects `{M,F}` tuple; default `nil`
     # If not nil calls `M.F/2`
-    changeset         = Util.get_mandatory_field(opts, :changeset)
+    changeset = Util.get_mandatory_field(opts, :changeset)
     # Uniquely indexed field name; default `:id`
-    key               = Util.get_optional_field(opts, :key, :id)
+    key = Util.get_optional_field(opts, :key, :id)
 
     quote do
       @behaviour GreenWorker.Behaviour
@@ -64,6 +64,7 @@ defmodule GreenWorker do
         |> case do
           nil ->
             {:id_not_found, id}
+
           ctx ->
             handle_context(id)
 
@@ -83,8 +84,8 @@ defmodule GreenWorker do
         if new_ctx != ctx do
           handle_context(get_id(ctx))
 
-          {:ok, _} = GreenWorker.Internal.store_context(
-            ctx, new_ctx, unquote(changeset), unquote(repo))
+          {:ok, _} =
+            GreenWorker.Internal.store_context(ctx, new_ctx, unquote(changeset), unquote(repo))
         end
 
         {:noreply, new_ctx}
@@ -100,18 +101,17 @@ defmodule GreenWorker do
       alias __MODULE__, as: ContainingModule
 
       defmodule Supervisor do
-
         use Elixir.Supervisor
 
         def start_link(gw_name) do
-         Supervisor.start_link(__MODULE__, gw_name)
+          Supervisor.start_link(__MODULE__, gw_name)
         end
 
         @impl true
         def init(gw_name) do
           dynamic_supervisor_init_args = [
             gw_module: ContainingModule,
-            config: ContainingModule.get_config(),
+            config: ContainingModule.get_config()
           ]
 
           children = [
@@ -122,7 +122,6 @@ defmodule GreenWorker do
           Supervisor.init(children, strategy: :rest_for_one)
         end
       end
-
     end
   end
 
@@ -181,7 +180,6 @@ defmodule GreenWorker do
     :exit, {:noproc, {GenServer, :call, _}} ->
       case start_supervised(module, id) do
         {:ok, _} -> module.get_context!(id)
-
         error = {:error, _} -> error
       end
   end
@@ -195,11 +193,13 @@ defmodule GreenWorker do
   end
 
   defp do_store_context(ctx, {m, f}, schema, repo) do
-    change = GreenWorker.Internal.call_changeset(m, f, [struct(schema), ctx])
-    |> IO.inspect(label: "DDDDDDDDDDDDDDDDDDD change")
+    change =
+      GreenWorker.Internal.call_changeset(m, f, [struct(schema), ctx])
+      |> IO.inspect(label: "DDDDDDDDDDDDDDDDDDD change")
 
     if change.valid? do
-      change |> repo.insert()
+      change
+      |> repo.insert()
       |> IO.inspect(label: "DDDDDDDDDDDDDDDDDDD insert")
     else
       {:error, change}
@@ -207,12 +207,15 @@ defmodule GreenWorker do
   end
 
   defp store_context_idempotency(store_resp = {:ok, _}, _key), do: store_resp
+
   defp store_context_idempotency(
-    {:error, %{action: :insert, errors: [{k, {"has already been taken", _}}]}},
-    key
-  ) when k == key do
+         {:error, %{action: :insert, errors: [{k, {"has already been taken", _}}]}},
+         key
+       )
+       when k == key do
     {:ok, :duplicate}
   end
+
   defp store_context_idempotency(store_resp = {:error, _}, _key), do: store_resp
 
   defp start_supervised_if({:ok, _}, module, id), do: start_supervised(module, id)

@@ -1,8 +1,8 @@
 defmodule Support.BasicTransition do
   use GreenWorker,
-  schema: Support.BasicSchema,
-  repo: Support.EctoRepo,
-  changeset: {Support.BasicSchema, :changeset}
+    schema: Support.BasicSchema,
+    repo: Support.EctoRepo,
+    changeset: {Support.BasicSchema, :changeset}
 
   @impl true
   def context_handler(ctx = %{:state => "init"}) do
@@ -10,7 +10,8 @@ defmodule Support.BasicTransition do
 
     PubSub.publish(BasicTransition, {ctx.id, "pending"})
 
-    ctx |> Map.put(:state, "pending")
+    ctx
+    |> Map.put(:state, "pending")
     |> IO.inspect(label: "GGGGGGGGGGGGGGG state exit")
   end
 
@@ -32,7 +33,7 @@ defmodule Support.BasicTransition do
   def context_handler(ctx = %{:state => "done"}) do
     PubSub.publish(BasicTransition, {ctx.id, "done"})
 
-    ctx     |> IO.inspect(label: "GGGGGGGGGGGGGGG state exit")
+    ctx |> IO.inspect(label: "GGGGGGGGGGGGGGG state exit")
   end
 
   @impl true

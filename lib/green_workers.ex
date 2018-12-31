@@ -205,8 +205,8 @@ defmodule GreenWorker do
     end
   end
 
-  defp start_supervised_if(insert_response, module, id, key) do
-    insert_response
+  defp start_supervised_if(store_response, module, id, key) do
+    store_response
     |> case do
       {:ok, _} ->
         start_supervised(module, id)

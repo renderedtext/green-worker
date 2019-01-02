@@ -1,6 +1,6 @@
 use Mix.Config
 
-config :green_worker, ecto_repos: [GreenWorker.EctoRepo]
+config :green_worker, ecto_repos: [Support.EctoRepo]
 
 # config :watchman,
 #     host: "statsd",

@@ -137,16 +137,16 @@ defmodule GreenWorker do
     persisted.
   """
   def store_and_start_supervised(module, to_store) do
-    %{schema: schema, repo: repo, changeset: changeset, key: key} = module.get_config()
+    %{key: key} = module.get_config()
 
-    ctx = GreenWorker.Ctx.new(to_store)
-
-    id = GreenWorker.Internal.get_id(ctx, key)
+    id =
+      GreenWorker.Ctx.new(to_store)
+      |> GreenWorker.Internal.get_id(key)
 
     if pid = whereis(module, id) do
       {:ok, pid}
     else
-      Queries.insert(to_store, changeset, schema, repo)
+      store(module, to_store)
       |> insert_idempotency(key)
       |> start_supervised_if(module, id)
     end

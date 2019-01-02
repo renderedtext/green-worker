@@ -57,18 +57,19 @@ defmodule GreenWorker do
         GenServer.cast(name(id), :handle_context)
       end
 
+      # ctx = {stored, cached}
       @impl true
       def init(id) do
         Keyword.put([], unquote(key), id)
-        |> GreenWorker.Internal.load_context(unquote(schema), unquote(repo))
+        |> GreenWorker.Internal.load(unquote(schema), unquote(repo))
         |> case do
           nil ->
             {:id_not_found, id}
 
-          ctx ->
+          stored ->
             handle_context(id)
 
-            {:ok, ctx}
+            {:ok, GreenWorker.Ctx.new(stored)}
         end
       end
 
@@ -79,13 +80,16 @@ defmodule GreenWorker do
 
       @impl true
       def handle_cast(:handle_context, ctx) do
-        new_ctx = context_handler(ctx)
+        new_ctx =
+          ctx
+          |> context_handler()
+          |> GreenWorker.Ctx.new()
 
         if new_ctx != ctx do
           handle_context(get_id(ctx))
 
           {:ok, _} =
-            GreenWorker.Internal.store_context(ctx, new_ctx, unquote(changeset), unquote(repo))
+            GreenWorker.Internal.store(ctx, new_ctx, unquote(changeset), unquote(repo))
         end
 
         {:noreply, new_ctx}
@@ -131,24 +135,27 @@ defmodule GreenWorker do
     Context is sanitized through changeset specified in `module` before it is
     persisted.
   """
-  def store_context_and_start_supervised(module, ctx) do
+  def store_and_start_supervised(module, to_store) do
     %{schema: schema, repo: repo, changeset: changeset, key: key} = module.get_config()
+
+    ctx = GreenWorker.Ctx.new(to_store)
 
     id = GreenWorker.Internal.get_id(ctx, key)
 
     if pid = whereis(module, id) do
       {:ok, pid}
     else
-      do_store_context(ctx, changeset, schema, repo)
-      |> store_context_idempotency(key)
+      do_store(ctx, changeset, schema, repo)
+      |> store_idempotency(key)
       |> start_supervised_if(module, id)
     end
   end
 
-  def store_context(module, ctx) do
+  def store(module, to_store) do
     %{schema: schema, repo: repo, changeset: changeset} = module.get_config()
 
-    do_store_context(ctx, changeset, schema, repo)
+    GreenWorker.Ctx.new(to_store)
+    |> do_store(changeset, schema, repo)
   end
 
   @doc """
@@ -192,9 +199,9 @@ defmodule GreenWorker do
     |> Process.whereis()
   end
 
-  defp do_store_context(ctx, {m, f}, schema, repo) do
+  defp do_store(ctx, {m, f}, schema, repo) do
     change =
-      GreenWorker.Internal.call_changeset(m, f, [struct(schema), ctx])
+      GreenWorker.Internal.call_changeset(m, f, [struct(schema), ctx.stored])
       |> IO.inspect(label: "DDDDDDDDDDDDDDDDDDD change")
 
     if change.valid? do
@@ -206,9 +213,9 @@ defmodule GreenWorker do
     end
   end
 
-  defp store_context_idempotency(store_resp = {:ok, _}, _key), do: store_resp
+  defp store_idempotency(store_resp = {:ok, _}, _key), do: store_resp
 
-  defp store_context_idempotency(
+  defp store_idempotency(
          {:error, %{action: :insert, errors: [{k, {"has already been taken", _}}]}},
          key
        )
@@ -216,7 +223,7 @@ defmodule GreenWorker do
     {:ok, :duplicate}
   end
 
-  defp store_context_idempotency(store_resp = {:error, _}, _key), do: store_resp
+  defp store_idempotency(store_resp = {:error, _}, _key), do: store_resp
 
   defp start_supervised_if({:ok, _}, module, id), do: start_supervised(module, id)
   defp start_supervised_if(error = {:error, _}, _module, _id), do: error

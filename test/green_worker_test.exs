@@ -15,10 +15,10 @@ defmodule GreenWorkerTest do
 
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx1 = %{id: id1, state: "init"}
-    assert {:ok, _} = GreenWorker.store_context(Support.BasicTransitionWithChangeset, ctx1)
+    assert {:ok, _} = GreenWorker.store(Support.Minimal, ctx1)
     id2 = "c6d81146-0847-11e9-b6f4-482ae31adfd4"
     ctx2 = %{id: id2, state: "done"}
-    assert {:ok, _} = GreenWorker.store_context(Support.BasicTransitionWithChangeset, ctx2)
+    assert {:ok, _} = GreenWorker.store(Support.Minimal, ctx2)
 
     assert {:ok, pid} = GreenWorker.start_supervised(Support.Minimal, id1)
     assert is_pid(pid)
@@ -36,16 +36,16 @@ defmodule GreenWorkerTest do
 
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx1 = %{id: id1, state: "init"}
-    assert {:ok, _} = GreenWorker.store_context(Support.BasicTransitionWithChangeset, ctx1)
+    assert {:ok, _} = GreenWorker.store(Support.BasicTransition, ctx1)
 
     assert {:ok, _} = GreenWorker.start_supervised(Support.BasicTransition, id1)
 
     wait_for(id1, "pending")
-    assert %{state: "pending"} = Support.BasicTransition.get_context!(id1)
+    assert "pending" = Support.BasicTransition.get_context!(id1).stored.state
     PubSub.publish(BasicTransitionToWorker, {id1, :can_advance})
 
     wait_for(id1, "done")
-    assert %{state: "done"} = Support.BasicTransition.get_context!(id1)
+    assert "done" = Support.BasicTransition.get_context!(id1).stored.state
 
     Supervisor.stop(sup)
   end
@@ -55,10 +55,10 @@ defmodule GreenWorkerTest do
 
     id1 = "86781246-0847-0000-0000-123456789012"
     ctx1 = %{id: id1, state: "init"}
-    assert {:ok, _} = GreenWorker.store_context(Support.BasicTransitionWithChangeset, ctx1)
+    assert {:ok, _} = GreenWorker.store(Support.BasicTransitionWithChangeset, ctx1)
     id2 = "86781246-0847-0000-0001-123456789012"
     ctx2 = %{id: id2, state: "init"}
-    assert {:ok, _} = GreenWorker.store_context(Support.BasicTransitionWithChangeset, ctx2)
+    assert {:ok, _} = GreenWorker.store(Support.BasicTransitionWithChangeset, ctx2)
 
     assert {:ok, sup} =
              Supervisor.start_link(Support.BasicTransition.Supervisor, strategy: :one_for_one)
@@ -69,8 +69,8 @@ defmodule GreenWorkerTest do
     wait_for(id1, "done")
     wait_for(id2, "done")
 
-    assert %{state: "done"} = Support.BasicTransition.get_context!(id1)
-    assert %{state: "done"} = Support.BasicTransition.get_context!(id2)
+    assert "done" = Support.BasicTransition.get_context!(id1).stored.state
+    assert "done" = Support.BasicTransition.get_context!(id2).stored.state
 
     Supervisor.stop(sup)
   end
@@ -87,14 +87,14 @@ defmodule GreenWorkerTest do
     Supervisor.stop(sup)
   end
 
-  test "store_context_and_start_supervised - success" do
+  test "store_and_start_supervised - success" do
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx = %{id: id1, state: "init"}
 
     assert {:ok, sup} =
              Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
 
-    assert {:ok, _} = GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+    assert {:ok, _} = GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
 
     assert %{schema: schema} = Support.NoActionWorker.get_config()
     expected = struct(schema, ctx)
@@ -103,7 +103,7 @@ defmodule GreenWorkerTest do
     Supervisor.stop(sup)
   end
 
-  test "store_context_and_start_supervised - idempotent - if process is running" do
+  test "store_and_start_supervised - idempotent - if process is running" do
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx = %{id: id1, state: "init"}
 
@@ -111,10 +111,10 @@ defmodule GreenWorkerTest do
              Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
 
     assert {:ok, pid} =
-             GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+             GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
 
     assert {:ok, ^pid} =
-             GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+             GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
 
     assert %{schema: schema} = Support.NoActionWorker.get_config()
     expected = struct(schema, ctx)
@@ -123,7 +123,7 @@ defmodule GreenWorkerTest do
     Supervisor.stop(sup)
   end
 
-  test "store_context_and_start_supervised - idempotent - if process is not running" do
+  test "store_and_start_supervised - idempotent - if process is not running" do
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx = %{id: id1, state: "init"}
 
@@ -131,12 +131,12 @@ defmodule GreenWorkerTest do
              Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
 
     assert {:ok, pid} =
-             GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+             GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
 
     GenServer.stop(pid)
 
     assert {:ok, pid2} =
-             GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+             GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
 
     assert pid != pid2
 
@@ -147,7 +147,7 @@ defmodule GreenWorkerTest do
     Supervisor.stop(sup)
   end
 
-  test "store_context_and_start_supervised - fail changeset validation" do
+  test "store_and_start_supervised - fail changeset validation" do
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx = %{id: id1}
 
@@ -155,7 +155,7 @@ defmodule GreenWorkerTest do
              Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
 
     assert {:error, _} =
-             GreenWorker.store_context_and_start_supervised(Support.NoActionWorker, ctx)
+             GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
 
     catch_exit(Support.NoActionWorker.get_context!(id1))
 
@@ -173,7 +173,7 @@ defmodule GreenWorkerTest do
              )
 
     assert {:ok, pid} =
-             GreenWorker.store_context_and_start_supervised(
+             GreenWorker.store_and_start_supervised(
                Support.BasicTransitionWithChangeset,
                ctx
              )

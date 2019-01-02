@@ -1,16 +1,16 @@
 defmodule GreenWorker.Internal do
   @moduledoc false
 
-  def get_id(ctx, key), do: Map.get(ctx, key)
+  def get_id(ctx, key), do: Map.get(ctx.stored, key)
 
-  def load_context(query_term, schema, repo) do
+  def load(query_term, schema, repo) do
     repo.get_by(schema, query_term)
   end
 
-  def store_context(ctx, new_ctx, changeset, repo) do
+  def store(%{stored: stored}, %{stored: to_store}, changeset, repo) do
     case changeset do
-      nil -> new_ctx
-      {m, f} -> call_changeset(m, f, [ctx, to_map(new_ctx)])
+      nil -> to_store
+      {m, f} -> call_changeset(m, f, [stored, to_map(to_store)])
     end
     |> repo.update()
   end

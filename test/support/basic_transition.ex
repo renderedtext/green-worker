@@ -5,24 +5,26 @@ defmodule Support.BasicTransition do
     changeset: {Support.BasicSchema, :changeset}
 
   @impl true
-  def context_handler(ctx = %{:state => "init"}) do
+  def context_handler(%{:stored => store = %{:state => "init"}}) do
     PubSub.subscribe(self(), BasicTransitionToWorker)
 
-    PubSub.publish(BasicTransition, {ctx.id, "pending"})
+    PubSub.publish(BasicTransition, {store.id, "pending"})
 
-    ctx
+    store
     |> Map.put(:state, "pending")
+    |> GreenWorker.Ctx.new()
     |> IO.inspect(label: "GGGGGGGGGGGGGGG state exit")
   end
 
   @impl true
-  def context_handler(ctx = %{:state => "pending"}) do
+  def context_handler(ctx = %{:stored => %{:state => "pending"}}) do
     if Map.get(ctx, :can_advance) == true do
       Map.delete(ctx, :can_advance)
-      PubSub.publish(BasicTransition, {ctx.id, "done"})
+      PubSub.publish(BasicTransition, {ctx.stored.id, "done"})
 
-      ctx
+      ctx.stored
       |> Map.put(:state, "done")
+      |> GreenWorker.Ctx.new
       |> IO.inspect(label: "GGGGGGGGGGGGGGG state exit")
     else
       ctx
@@ -30,8 +32,8 @@ defmodule Support.BasicTransition do
   end
 
   @impl true
-  def context_handler(ctx = %{:state => "done"}) do
-    PubSub.publish(BasicTransition, {ctx.id, "done"})
+  def context_handler(ctx = %{:stored => %{:state => "done"}}) do
+    PubSub.publish(BasicTransition, {ctx.stored.id, "done"})
 
     ctx |> IO.inspect(label: "GGGGGGGGGGGGGGG state exit")
   end

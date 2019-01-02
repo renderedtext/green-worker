@@ -4,6 +4,7 @@ defmodule GreenWorker do
   """
 
   alias GreenWorker.Util
+  alias GreenWorker.Queries
 
   defmodule Behaviour do
     @moduledoc false
@@ -61,7 +62,7 @@ defmodule GreenWorker do
       @impl true
       def init(id) do
         Keyword.put([], unquote(key), id)
-        |> GreenWorker.Internal.load(unquote(schema), unquote(repo))
+        |> Queries.read(unquote(schema), unquote(repo))
         |> case do
           nil ->
             {:id_not_found, id}
@@ -89,7 +90,7 @@ defmodule GreenWorker do
           handle_context(get_id(ctx))
 
           {:ok, _} =
-            GreenWorker.Internal.store(ctx, new_ctx, unquote(changeset), unquote(repo))
+            Queries.update(ctx, new_ctx, unquote(changeset), unquote(repo))
         end
 
         {:noreply, new_ctx}
@@ -145,8 +146,8 @@ defmodule GreenWorker do
     if pid = whereis(module, id) do
       {:ok, pid}
     else
-      do_store(ctx, changeset, schema, repo)
-      |> store_idempotency(key)
+      Queries.insert(to_store, changeset, schema, repo)
+      |> insert_idempotency(key)
       |> start_supervised_if(module, id)
     end
   end
@@ -154,8 +155,7 @@ defmodule GreenWorker do
   def store(module, to_store) do
     %{schema: schema, repo: repo, changeset: changeset} = module.get_config()
 
-    GreenWorker.Ctx.new(to_store)
-    |> do_store(changeset, schema, repo)
+    Queries.insert(to_store, changeset, schema, repo)
   end
 
   @doc """
@@ -199,23 +199,9 @@ defmodule GreenWorker do
     |> Process.whereis()
   end
 
-  defp do_store(ctx, {m, f}, schema, repo) do
-    change =
-      GreenWorker.Internal.call_changeset(m, f, [struct(schema), ctx.stored])
-      |> IO.inspect(label: "DDDDDDDDDDDDDDDDDDD change")
+  defp insert_idempotency(insert_resp = {:ok, _}, _key), do: insert_resp
 
-    if change.valid? do
-      change
-      |> repo.insert()
-      |> IO.inspect(label: "DDDDDDDDDDDDDDDDDDD insert")
-    else
-      {:error, change}
-    end
-  end
-
-  defp store_idempotency(store_resp = {:ok, _}, _key), do: store_resp
-
-  defp store_idempotency(
+  defp insert_idempotency(
          {:error, %{action: :insert, errors: [{k, {"has already been taken", _}}]}},
          key
        )
@@ -223,7 +209,7 @@ defmodule GreenWorker do
     {:ok, :duplicate}
   end
 
-  defp store_idempotency(store_resp = {:error, _}, _key), do: store_resp
+  defp insert_idempotency(insert_resp = {:error, _}, _key), do: insert_resp
 
   defp start_supervised_if({:ok, _}, module, id), do: start_supervised(module, id)
   defp start_supervised_if(error = {:error, _}, _module, _id), do: error

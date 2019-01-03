@@ -284,12 +284,26 @@ defmodule GreenWorker do
   If worker start fails, return error.
   """
   def get_context(module, id) do
-    do_get_context(module, id)
+    case get_context!(module, id) do
+      error = {:error, _} -> error
+      response -> {:ok, response}
+    end
+  rescue
+    error ->
+      {:error, error}      
+  catch
+    :throw, error ->
+      {:error, error}
+  end
+
+  def get_context!(module, id) do
+    module.get_context!(id)
   catch
     :exit, {:noproc, {GenServer, :call, _}} ->
       case start_supervised(module, id) do
-        {:ok, _} -> do_get_context(module, id)
-        error = {:error, _} -> error
+        {:ok, _} -> module.get_context!(id)
+
+        {:error, error} -> throw(error)
       end
   end
 

@@ -117,6 +117,8 @@ defmodule GreenWorker do
     changeset = Util.get_optional_field(opts, :changeset, {schema, :changeset})
     # Uniquely indexed field name; default `:id`
     key = Util.get_optional_field(opts, :key, :id)
+    state_field = Util.get_optional_field(opts, :state_field, :state)
+    terminal_states = Util.get_optional_field(opts, :terminal_states, ["done"])
 
     quote do
       @behaviour GreenWorker.Behaviour
@@ -137,7 +139,9 @@ defmodule GreenWorker do
           schema: unquote(schema),
           repo: unquote(repo),
           changeset: unquote(changeset),
-          key: unquote(key)
+          key: unquote(key),
+          state_field: unquote(state_field),
+          terminal_states: unquote(terminal_states)
         }
       end
 
@@ -290,7 +294,7 @@ defmodule GreenWorker do
     end
   rescue
     error ->
-      {:error, error}      
+      {:error, error}
   catch
     :throw, error ->
       {:error, error}

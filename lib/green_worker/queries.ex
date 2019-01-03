@@ -15,10 +15,10 @@ defmodule GreenWorker.Queries do
     |> repo.update()
   end
 
-  def get_all_non_finished_workers(schema, repo) do
+  def get_all_non_finished_workers(schema, repo, state_field, terminal_states) do
     import Ecto.Query
 
-    from(s in schema, where: s.state != "done")
+    from(s in schema, where: field(s, ^state_field) not in ^terminal_states)
     |> repo.all()
   end
 

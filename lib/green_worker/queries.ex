@@ -10,7 +10,7 @@ defmodule GreenWorker.Queries do
     |> IO.inspect(label: "DDDDDDDDDDDDDDDDDDD insert")
   end
 
-  def update(%{stored: stored}, %{stored: to_store}, _changeset = {m, f}, repo) do
+  def update(%{store: stored}, %{store: to_store}, _changeset = {m, f}, repo) do
     call_changeset(m, f, [stored, to_map(to_store)])
     |> repo.update()
   end

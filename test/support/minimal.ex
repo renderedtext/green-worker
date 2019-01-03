@@ -7,12 +7,12 @@ defmodule Support.Minimal do
     changeset: {Support.BasicSchema, :changeset}
 
   @impl true
-  def context_handler(ctx = %{:stored => %{:state => "init"}}) do
+  def context_handler(ctx = %{:store => %{:state => "init"}}) do
     ctx |> IO.inspect(label: "GGGGGGGGGGGGGGG state")
   end
 
   @impl true
-  def context_handler(ctx = %{stored: %{:state => "done"}}) do
+  def context_handler(ctx = %{store: %{:state => "done"}}) do
     ctx |> IO.inspect(label: "GGGGGGGGGGGGGGGGGGGGGGG state2")
   end
 end

@@ -41,11 +41,11 @@ defmodule GreenWorkerTest do
     assert {:ok, _} = GreenWorker.start_supervised(Support.BasicTransition, id1)
 
     wait_for(id1, "pending")
-    assert "pending" = Support.BasicTransition.get_context!(id1).stored.state
+    assert "pending" = Support.BasicTransition.get_context!(id1).store.state
     PubSub.publish(BasicTransitionToWorker, {id1, :can_advance})
 
     wait_for(id1, "done")
-    assert "done" = Support.BasicTransition.get_context!(id1).stored.state
+    assert "done" = Support.BasicTransition.get_context!(id1).store.state
 
     Supervisor.stop(sup)
   end
@@ -69,8 +69,8 @@ defmodule GreenWorkerTest do
     wait_for(id1, "done")
     wait_for(id2, "done")
 
-    assert "done" = Support.BasicTransition.get_context!(id1).stored.state
-    assert "done" = Support.BasicTransition.get_context!(id2).stored.state
+    assert "done" = Support.BasicTransition.get_context!(id1).store.state
+    assert "done" = Support.BasicTransition.get_context!(id2).store.state
 
     Supervisor.stop(sup)
   end
@@ -179,7 +179,7 @@ defmodule GreenWorkerTest do
              )
 
     assert %{} = Support.BasicTransitionWithChangeset.get_context!(id1)
-    assert {:ok, %GreenWorker.Ctx{cached: %{}, stored: %{}}} =
+    assert {:ok, %GreenWorker.Ctx{cache: %{}, store: %{}}} =
               GreenWorker.get_context(Support.BasicTransitionWithChangeset, id1)
 
     assert :ok = GenServer.stop(pid, :normal)
@@ -187,14 +187,14 @@ defmodule GreenWorkerTest do
 
     catch_exit(Support.BasicTransitionWithChangeset.get_context!(id1))
 
-    assert {:ok, %GreenWorker.Ctx{cached: %{}, stored: %{}}} =
+    assert {:ok, %GreenWorker.Ctx{cache: %{}, store: %{}}} =
               GreenWorker.get_context(Support.BasicTransitionWithChangeset, id1)
-    assert %GreenWorker.Ctx{cached: %{}, stored: %{}} =
+    assert %GreenWorker.Ctx{cache: %{}, store: %{}} =
               Support.BasicTransitionWithChangeset.get_context!(id1)
 
     pid = GreenWorker.whereis(Support.BasicTransitionWithChangeset, id1)
     assert is_pid(pid)
-    assert %GreenWorker.Ctx{cached: %{}, stored: %{}} =
+    assert %GreenWorker.Ctx{cache: %{}, store: %{}} =
               GenServer.call(pid, :get_context)
 
     Supervisor.stop(sup)

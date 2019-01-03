@@ -3,12 +3,12 @@ defmodule GreenWorker.Ctx do
   Contains GreenWorker process context
   """
 
-  defstruct stored: %{}, cached: %{}
-  @type t :: %GreenWorker.Ctx{stored: Map.t, cached: Map.t}
+  defstruct store: %{}, cache: %{}
+  @type t :: %GreenWorker.Ctx{store: Map.t, cache: Map.t}
 
   def new(collectable = %GreenWorker.Ctx{}), do: collectable
 
   def new(store), do: new(store, %{})
 
-  def new(store, cache), do: struct(__MODULE__, stored: store, cache: cache)
+  def new(store, cache), do: struct(__MODULE__, store: store, cache: cache)
 end

@@ -3,8 +3,7 @@ defmodule Support.BasicTransition do
 
   use GreenWorker,
     schema: Support.BasicSchema,
-    repo: Support.EctoRepo,
-    changeset: {Support.BasicSchema, :changeset}
+    repo: Support.EctoRepo
 
   @impl true
   def context_handler(%{:stored => store = %{:state => "init"}}) do

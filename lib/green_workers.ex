@@ -110,11 +110,11 @@ defmodule GreenWorker do
   defmacro __using__(opts) do
     # Module name representing Ecto schema to load/store context
     schema = Util.get_mandatory_field(opts, :schema)
-    # Module name representingEecto repo
+    # Module name representing Eecto repo
     repo = Util.get_mandatory_field(opts, :repo)
-    # Expects `{M,F}` tuple; default `nil`
-    # If not nil calls `M.F/2`
-    changeset = Util.get_mandatory_field(opts, :changeset)
+    # Expects `{M,F}` tuple; default `{schema, :changeset}`
+    # Calls `M.F/2`
+    changeset = Util.get_optional_field(opts, :changeset, {schema, :changeset})
     # Uniquely indexed field name; default `:id`
     key = Util.get_optional_field(opts, :key, :id)
 

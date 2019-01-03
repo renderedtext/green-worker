@@ -67,12 +67,12 @@ defmodule GreenWorker do
   ### Worker
   To persist context and start new worker use:
 
-      iex> GreenWorker.store_and_start_supervised(My.Worker, %{id: 1, state: "init"})
+      > GreenWorker.store_and_start_supervised(My.Worker, %{id: 1, state: "init"})
       {:ok, #PID<0.95.0>}
 
   To get current worker's context:
 
-      iex> GreenWorker.get_context(My.Worker, 1)
+      > GreenWorker.get_context(My.Worker, 1)
       {:ok, %GreenWorker.Ctx{cache: %{}, store: ...}
 
   ## Options

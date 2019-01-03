@@ -1,10 +1,20 @@
 defmodule GreenWorker.DynamicSupervisorInit do
   use GenServer
 
+  @doc false
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)
   end
 
+  @impl true
+  @doc """
+  Starts workers for all `schema` entries in `repo`
+  that are not in "terminal state".
+
+  Required `opts`:
+  - `gw_module` - GreenWorker module name
+  - `config` - options specified when worker was defined
+  """
   def init(opts = [gw_module: gw_module, config: config]) do
     opts
     |> IO.inspect(label: "ZZZZZZZZZZZZZZ gw_name")
@@ -16,7 +26,7 @@ defmodule GreenWorker.DynamicSupervisorInit do
   end
 
   @doc """
-  Starts all workers that are not in "done" state.
+  Starts all workers that are not in terminal state.
   """
   def start_all_non_finished_workers(gw_module, config) do
     gw_module

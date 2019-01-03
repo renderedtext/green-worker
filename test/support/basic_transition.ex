@@ -1,4 +1,6 @@
 defmodule Support.BasicTransition do
+  @moduledoc false
+
   use GreenWorker,
     schema: Support.BasicSchema,
     repo: Support.EctoRepo,

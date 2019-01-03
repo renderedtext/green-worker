@@ -1,4 +1,6 @@
 defmodule Support.NoActionWorker do
+  @moduledoc false
+
   use GreenWorker,
     schema: Support.BasicSchema,
     repo: Support.EctoRepo,

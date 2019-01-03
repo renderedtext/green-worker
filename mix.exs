@@ -4,14 +4,18 @@
 defmodule GreenWorker.Mixfile do
   use Mix.Project
 
+  @version "0.2.0"
+
+
   def project do
     [
       app: :green_worker,
-      version: "0.2.0",
+      version: @version,
       elixir: "~> 1.6",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
+      docs: docs(),
       deps: deps()
     ]
   end
@@ -24,6 +28,14 @@ defmodule GreenWorker.Mixfile do
     [extra_applications: [:logger], mod: {GreenWorker.Application, []}]
   end
 
+  defp docs do
+    [
+      main: "GreenWorker",
+      source_ref: "v#{@version}",
+      source_url: "https://github.com/renderedtext/green-worker"
+    ]
+  end
+
   defp deps do
     [
       {:distillery, "~> 2.0"},
@@ -34,7 +46,8 @@ defmodule GreenWorker.Mixfile do
       {:pubsub, "~> 1.0", only: [:dev, :test]},
       {:uuid, "~> 1.1"},
       {:libcluster, "~> 3.0"},
-      {:swarm, "~> 3.3"}
+      {:swarm, "~> 3.3"},
+      {:ex_doc, "~> 0.18.0", only: :dev, runtime: false}
     ]
   end
 end

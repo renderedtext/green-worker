@@ -125,7 +125,8 @@ defmodule GreenWorker do
 
       use GenServer
 
-      import GreenWorker.Imports
+      import GreenWorker.Macros
+      import GreenWorker.Ctx, only: unquote(GreenWorker.Ctx.auto_import())
 
       @state_field unquote(state_field)
 
@@ -187,7 +188,6 @@ defmodule GreenWorker do
         new_ctx =
           ctx
           |> context_handler()
-          |> GreenWorker.Ctx.new()
 
         if new_ctx != ctx do
           handle_context(get_id(ctx))

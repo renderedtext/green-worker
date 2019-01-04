@@ -158,7 +158,7 @@ defmodule GreenWorker do
         GenServer.call(name(id), :get_context)
       end
 
-      def handle_context(id) do
+      def schedule_handling(id) do
         GenServer.cast(name(id), :handle_context)
       end
 
@@ -172,7 +172,7 @@ defmodule GreenWorker do
             {:id_not_found, id}
 
           stored ->
-            handle_context(id)
+            schedule_handling(id)
 
             {:ok, GreenWorker.Ctx.new(stored)}
         end
@@ -190,7 +190,7 @@ defmodule GreenWorker do
           |> context_handler()
 
         if new_ctx != ctx do
-          handle_context(get_id(ctx))
+          schedule_handling(get_id(ctx))
 
           {:ok, _} =
             Queries.update(ctx, new_ctx, unquote(changeset), unquote(repo))

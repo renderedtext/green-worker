@@ -36,7 +36,7 @@ defmodule Support.BasicTransition do
 
   @impl true
   def handle_info({id, :can_advance}, ctx) do
-    handle_context(id)
+    schedule_handling(id)
 
     {:noreply, Map.put(ctx, :can_advance, true)}
   end

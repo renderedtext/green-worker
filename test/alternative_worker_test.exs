@@ -19,9 +19,10 @@ defmodule AlternativeWorkerTest do
 
     assert {:ok, _} = GreenWorker.store_and_start_supervised(Support.AlternativeWorker, ctx)
 
-    assert %{schema: schema} = Support.AlternativeWorker.get_config()
-    expected = struct(schema, ctx)
-    assert expected = Support.AlternativeWorker.get_context!(id1)
+    assert %{store: store, cache: cache} = Support.AlternativeWorker.get_context!(id1)
+    assert id1 == store.id_field
+    assert "really_done" == store.state_field
+    assert %{id: ^id1} = cache
 
     Supervisor.stop(sup)
   end

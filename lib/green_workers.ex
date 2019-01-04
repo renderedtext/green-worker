@@ -125,6 +125,10 @@ defmodule GreenWorker do
 
       use GenServer
 
+      import GreenWorker.Macros
+
+      @state_field unquote(state_field)
+
       def start_link(id) do
         GenServer.start_link(__MODULE__, id, name: name(id))
       end

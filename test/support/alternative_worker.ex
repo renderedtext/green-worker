@@ -10,16 +10,14 @@ defmodule Support.AlternativeWorker do
     terminal_states: ["really_done"]
 
 
-  handler for_state: "initial_state" do
+  handle state: "initial_state" do
   # @impl true
   # def context_handler(%{:store => store = %{:state_field => "initial_state"}}) do
-    ctx = update_cache(%{id: ctx.store.id_field})
-    |> IO.inspect(label: "GGGGGGGGGGGGGGGGGGGG")
-
-    ctx.store
-    |> Map.put(:state_field, "really_done")
-    |> update_store()
-    |> IO.inspect(label: "GGGGGGGGGGGGGGGGGGGG")
+    ctx
+    |> put_cache(%{id: ctx.store.id_field})
+    |> IO.inspect(label: "GGGGGGGGGGGGGGGGGGGG 0")
+    |> put_store(:state_field, "really_done")
+    |> IO.inspect(label: "GGGGGGGGGGGGGGGGGGGG 1")
   end
 
   # @impl true
@@ -27,8 +25,8 @@ defmodule Support.AlternativeWorker do
   #   ctx
   # end
 
-  handler for_state: "really_done" do
+  handle state: "really_done" do
     ctx
-    |> IO.inspect(label: "GGGGGGGGGGGGGGGGGGGG")
+    |> IO.inspect(label: "GGGGGGGGGGGGGGGGGGGG done")
   end
 end

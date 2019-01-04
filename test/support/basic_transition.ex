@@ -5,35 +5,30 @@ defmodule Support.BasicTransition do
     schema: Support.BasicSchema,
     repo: Support.EctoRepo
 
-  @impl true
-  def context_handler(%{:store => store = %{:state => "init"}}) do
+  handle state: "init" do
     PubSub.subscribe(self(), BasicTransitionToWorker)
 
-    PubSub.publish(BasicTransition, {store.id, "pending"})
+    PubSub.publish(BasicTransition, {ctx.store.id, "pending"})
 
-    store
-    |> Map.put(:state, "pending")
-    |> GreenWorker.Ctx.new()
+    ctx
+    |> put_store(:state, "pending")
     |> IO.inspect(label: "GGGGGGGGGGGGGGG state exit")
   end
 
-  @impl true
-  def context_handler(ctx = %{:store => %{:state => "pending"}}) do
+  handle state: "pending" do
     if Map.get(ctx, :can_advance) == true do
       Map.delete(ctx, :can_advance)
       PubSub.publish(BasicTransition, {ctx.store.id, "done"})
 
-      ctx.store
-      |> Map.put(:state, "done")
-      |> GreenWorker.Ctx.new
+      ctx
+      |> put_store(:state, "done")
       |> IO.inspect(label: "GGGGGGGGGGGGGGG state exit")
     else
       ctx
     end
   end
 
-  @impl true
-  def context_handler(ctx = %{:store => %{:state => "done"}}) do
+  handle state: "done" do
     PubSub.publish(BasicTransition, {ctx.store.id, "done"})
 
     ctx |> IO.inspect(label: "GGGGGGGGGGGGGGG state exit")

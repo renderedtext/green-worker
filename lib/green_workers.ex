@@ -125,7 +125,7 @@ defmodule GreenWorker do
 
       use GenServer
 
-      import GreenWorker.Macros
+      import GreenWorker.Imports
 
       @state_field unquote(state_field)
 

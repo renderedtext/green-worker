@@ -315,10 +315,6 @@ defmodule GreenWorker do
       end
   end
 
-  defp do_get_context(module, id) do
-    {:ok, module.get_context!(id)}
-  end
-
   @doc """
     Return pid of specified worker if running or nil otherwise.
   """

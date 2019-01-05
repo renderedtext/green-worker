@@ -100,6 +100,7 @@ defmodule GreenWorker do
 
   alias GreenWorker.Util
   alias GreenWorker.Queries
+  alias GreenWorker.Internal
 
   defmodule Behaviour do
     @moduledoc false
@@ -162,7 +163,6 @@ defmodule GreenWorker do
         GenServer.cast(name(id), :handle_context)
       end
 
-      # ctx = {stored, cached}
       @impl true
       def init(id) do
         Keyword.put([], unquote(key), id)
@@ -185,11 +185,11 @@ defmodule GreenWorker do
 
       @impl true
       def handle_cast(:handle_context, ctx) do
-        new_ctx =
-          ctx
-          |> context_handler()
+        new_ctx = context_handler(ctx)
 
         if new_ctx != ctx do
+          Internal.assert_state_field_changed(ctx, new_ctx, unquote(state_field))
+
           schedule_handling(get_id(ctx))
 
           {:ok, _} =

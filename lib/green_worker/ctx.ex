@@ -4,7 +4,7 @@ defmodule GreenWorker.Ctx do
   """
 
   defstruct store: %{}, cache: %{}
-  @type t :: %GreenWorker.Ctx{store: Map.t, cache: Map.t}
+  @type t :: %GreenWorker.Ctx{store: Map.t(), cache: Map.t()}
 
   def new(collectable = %__MODULE__{}), do: collectable
 

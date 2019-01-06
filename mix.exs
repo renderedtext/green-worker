@@ -6,7 +6,6 @@ defmodule GreenWorker.Mixfile do
 
   @version "0.2.0"
 
-
   def project do
     [
       app: :green_worker,

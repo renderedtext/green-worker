@@ -18,13 +18,11 @@ defmodule StateFieldFailWorkerTest do
              Supervisor.start_link(StateFieldFailWorker.Supervisor, strategy: :one_for_one)
 
     Process.flag(:trap_exit, true)
-    assert {:ok, pid} =
-              GreenWorker.store_and_start_supervised(StateFieldFailWorker, ctx)
+    assert {:ok, pid} = GreenWorker.store_and_start_supervised(StateFieldFailWorker, ctx)
 
     Process.link(pid)
 
     assert_receive {:EXIT, ^pid, error}
-    assert String.contains?(
-      error, "ctx changed but ctx.store.@state_field_name did NOT")
+    assert String.contains?(error, "ctx changed but ctx.store.@state_field_name did NOT")
   end
 end

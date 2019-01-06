@@ -5,7 +5,6 @@ defmodule Support.StateFieldFailWorker do
     schema: Support.BasicSchema,
     repo: Support.EctoRepo
 
-
   handle state: "init" do
     :timer.sleep(50)
 

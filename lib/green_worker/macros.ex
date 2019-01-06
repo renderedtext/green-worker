@@ -7,8 +7,8 @@ defmodule GreenWorker.Macros do
     quote do
       @impl true
       def context_handler(var!(ctx) = %{:store => %{@state_field_name => unquote(state)}}) do
-          unquote(body)
-        end
+        unquote(body)
+      end
     end
   end
 end

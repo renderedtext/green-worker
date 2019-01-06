@@ -1,5 +1,4 @@
 defmodule GreenWorker.Queries do
-
   def read(query_term, schema, repo) do
     repo.get_by(schema, query_term)
   end

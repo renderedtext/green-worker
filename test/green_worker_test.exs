@@ -110,11 +110,9 @@ defmodule GreenWorkerTest do
     assert {:ok, sup} =
              Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
 
-    assert {:ok, pid} =
-             GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
+    assert {:ok, pid} = GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
 
-    assert {:ok, ^pid} =
-             GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
+    assert {:ok, ^pid} = GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
 
     assert %{schema: schema} = Support.NoActionWorker.get_config()
     expected = struct(schema, ctx)
@@ -130,13 +128,11 @@ defmodule GreenWorkerTest do
     assert {:ok, sup} =
              Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
 
-    assert {:ok, pid} =
-             GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
+    assert {:ok, pid} = GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
 
     GenServer.stop(pid)
 
-    assert {:ok, pid2} =
-             GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
+    assert {:ok, pid2} = GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
 
     assert pid != pid2
 
@@ -154,8 +150,7 @@ defmodule GreenWorkerTest do
     assert {:ok, sup} =
              Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
 
-    assert {:error, _} =
-             GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
+    assert {:error, _} = GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
 
     catch_exit(Support.NoActionWorker.get_context!(id1))
 
@@ -179,8 +174,9 @@ defmodule GreenWorkerTest do
              )
 
     assert %{} = Support.BasicTransitionWithChangeset.get_context!(id1)
+
     assert {:ok, %GreenWorker.Ctx{cache: %{}, store: %{}}} =
-              GreenWorker.get_context(Support.BasicTransitionWithChangeset, id1)
+             GreenWorker.get_context(Support.BasicTransitionWithChangeset, id1)
 
     assert :ok = GenServer.stop(pid, :normal)
     refute Process.alive?(pid)
@@ -188,14 +184,14 @@ defmodule GreenWorkerTest do
     catch_exit(Support.BasicTransitionWithChangeset.get_context!(id1))
 
     assert {:ok, %GreenWorker.Ctx{cache: %{}, store: %{}}} =
-              GreenWorker.get_context(Support.BasicTransitionWithChangeset, id1)
+             GreenWorker.get_context(Support.BasicTransitionWithChangeset, id1)
+
     assert %GreenWorker.Ctx{cache: %{}, store: %{}} =
-              Support.BasicTransitionWithChangeset.get_context!(id1)
+             Support.BasicTransitionWithChangeset.get_context!(id1)
 
     pid = GreenWorker.whereis(Support.BasicTransitionWithChangeset, id1)
     assert is_pid(pid)
-    assert %GreenWorker.Ctx{cache: %{}, store: %{}} =
-              GenServer.call(pid, :get_context)
+    assert %GreenWorker.Ctx{cache: %{}, store: %{}} = GenServer.call(pid, :get_context)
 
     Supervisor.stop(sup)
   end

@@ -188,13 +188,11 @@ defmodule GreenWorker do
         new_ctx = context_handler(ctx)
 
         if new_ctx != ctx do
-          Internal.assert_state_field_changed(
-            ctx, new_ctx, unquote(state_field_name))
+          Internal.assert_state_field_changed(ctx, new_ctx, unquote(state_field_name))
 
           schedule_handling(get_id(ctx))
 
-          {:ok, _} =
-            Queries.update(ctx, new_ctx, unquote(changeset), unquote(repo))
+          {:ok, _} = Queries.update(ctx, new_ctx, unquote(changeset), unquote(repo))
         end
 
         {:noreply, new_ctx}
@@ -311,7 +309,6 @@ defmodule GreenWorker do
     :exit, {:noproc, {GenServer, :call, _}} ->
       case start_supervised(module, id) do
         {:ok, _} -> module.get_context!(id)
-
         {:error, error} -> throw(error)
       end
   end

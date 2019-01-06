@@ -18,10 +18,12 @@ defmodule GreenWorker.Internal do
   end
 
   defp state_field_fault_error_message(new_ctx) do
-    ["GreenWorker validation error:",
-    "ctx changed but ctx.store.@state_field_name did NOT!",
-    " ==> ",
-    "New context: #{inspect(new_ctx)}"]
+    [
+      "GreenWorker validation error:",
+      "ctx changed but ctx.store.@state_field_name did NOT!",
+      " ==> ",
+      "New context: #{inspect(new_ctx)}"
+    ]
     |> Enum.join(" ")
   end
 end

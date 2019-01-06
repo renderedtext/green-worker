@@ -9,10 +9,7 @@ defmodule Support.AlternativeWorker do
     state_field_name: :state_field,
     terminal_states: ["really_done"]
 
-
   handle state: "initial_state" do
-  # @impl true
-  # def context_handler(%{:store => store = %{:state_field => "initial_state"}}) do
     ctx
     |> put_cache(%{id: ctx.store.id_field})
     |> IO.inspect(label: "GGGGGGGGGGGGGGGGGGGG 0")

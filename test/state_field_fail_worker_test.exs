@@ -4,6 +4,8 @@ defmodule StateFieldFailWorkerTest do
   alias Support.EctoRepo, as: Repo
   alias Support.StateFieldFailWorker
 
+  import TestHelpers, only: [start_family: 1]
+
   setup do
     assert {:ok, _} = Ecto.Adapters.SQL.query(Repo, "truncate table basic cascade;")
 
@@ -14,8 +16,7 @@ defmodule StateFieldFailWorkerTest do
     id = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx = %{id: id, state: "init"}
 
-    assert {:ok, sup} =
-             Supervisor.start_link(StateFieldFailWorker.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} = start_family(StateFieldFailWorker)
 
     Process.flag(:trap_exit, true)
     assert {:ok, pid} = GreenWorker.store_and_start_supervised(StateFieldFailWorker, ctx)

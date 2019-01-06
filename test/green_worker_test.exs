@@ -3,6 +3,7 @@ defmodule GreenWorkerTest do
   doctest GreenWorker
 
   alias Support.EctoRepo, as: Repo
+  import TestHelpers, only: [start_family: 1]
 
   setup do
     assert {:ok, _} = Ecto.Adapters.SQL.query(Repo, "truncate table basic cascade;")
@@ -11,7 +12,7 @@ defmodule GreenWorkerTest do
   end
 
   test "start_supervised - success" do
-    assert {:ok, sup} = Supervisor.start_link(Support.Minimal.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} = start_family(Support.Minimal)
 
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx1 = %{id: id1, state: "init"}
@@ -28,11 +29,29 @@ defmodule GreenWorkerTest do
     Supervisor.stop(sup)
   end
 
+  test "start supervisors for multiple families" do
+    assert {:ok, sup} = start_family([Support.Minimal, Support.BasicTransition])
+
+    id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
+    ctx1 = %{id: id1, state: "init"}
+    assert {:ok, _} = GreenWorker.store(Support.Minimal, ctx1)
+    id2 = "c6d81146-0847-11e9-b6f4-482ae31adfd4"
+    ctx2 = %{id: id2, state: "done"}
+    assert {:ok, _} = GreenWorker.store(Support.BasicTransition, ctx2)
+
+    assert {:ok, pid} = GreenWorker.start_supervised(Support.Minimal, id1)
+    assert is_pid(pid)
+    assert {:ok, ^pid} = GreenWorker.start_supervised(Support.Minimal, id1)
+    assert {:ok, pid} = GreenWorker.start_supervised(Support.BasicTransition, id2)
+    assert is_pid(pid)
+
+    Supervisor.stop(sup)
+  end
+
   test "start_supervised - state transitions" do
     PubSub.subscribe(self(), BasicTransition)
 
-    assert {:ok, sup} =
-             Supervisor.start_link(Support.BasicTransition.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} = start_family(Support.BasicTransition)
 
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx1 = %{id: id1, state: "init"}
@@ -60,8 +79,7 @@ defmodule GreenWorkerTest do
     ctx2 = %{id: id2, state: "init"}
     assert {:ok, _} = GreenWorker.store(Support.BasicTransitionWithChangeset, ctx2)
 
-    assert {:ok, sup} =
-             Supervisor.start_link(Support.BasicTransition.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} = start_family(Support.BasicTransition)
 
     PubSub.publish(BasicTransitionToWorker, {id1, :can_advance})
     PubSub.publish(BasicTransitionToWorker, {id2, :can_advance})
@@ -78,8 +96,7 @@ defmodule GreenWorkerTest do
   test "start_supervised - start worker for non-existent id" do
     id1 = UUID.uuid1()
 
-    assert {:ok, sup} =
-             Supervisor.start_link(Support.BasicTransition.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} = start_family(Support.BasicTransition)
 
     assert {:error, {:bad_return_value, {:id_not_found, _}}} =
              GreenWorker.start_supervised(Support.BasicTransition, id1)
@@ -91,8 +108,7 @@ defmodule GreenWorkerTest do
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx = %{id: id1, state: "init"}
 
-    assert {:ok, sup} =
-             Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} = start_family(Support.NoActionWorker)
 
     assert {:ok, _} = GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
 
@@ -107,8 +123,7 @@ defmodule GreenWorkerTest do
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx = %{id: id1, state: "init"}
 
-    assert {:ok, sup} =
-             Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} = start_family(Support.NoActionWorker)
 
     assert {:ok, pid} = GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
 
@@ -125,8 +140,7 @@ defmodule GreenWorkerTest do
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx = %{id: id1, state: "init"}
 
-    assert {:ok, sup} =
-             Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} = start_family(Support.NoActionWorker)
 
     assert {:ok, pid} = GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
 
@@ -147,8 +161,7 @@ defmodule GreenWorkerTest do
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx = %{id: id1}
 
-    assert {:ok, sup} =
-             Supervisor.start_link(Support.NoActionWorker.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} = start_family(Support.NoActionWorker)
 
     assert {:error, _} = GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
 
@@ -161,11 +174,7 @@ defmodule GreenWorkerTest do
     id1 = "c6d81146-0847-11e9-b6f4-482ae31adfd4"
     ctx = %{id: id1, state: "done"}
 
-    assert {:ok, sup} =
-             Supervisor.start_link(
-               Support.BasicTransitionWithChangeset.Supervisor,
-               strategy: :one_for_one
-             )
+    assert {:ok, sup} = start_family(Support.BasicTransitionWithChangeset)
 
     assert {:ok, pid} =
              GreenWorker.store_and_start_supervised(
@@ -200,11 +209,7 @@ defmodule GreenWorkerTest do
     id = UUID.uuid1()
     ctx = %{id: id, state: "done"}
 
-    assert {:ok, sup} =
-             Supervisor.start_link(
-               Support.BasicTransitionWithChangeset.Supervisor,
-               strategy: :one_for_one
-             )
+    assert {:ok, sup} = start_family(Support.BasicTransitionWithChangeset)
 
     catch_exit(Support.BasicTransitionWithChangeset.get_context!(id))
 

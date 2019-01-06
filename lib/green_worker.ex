@@ -202,35 +202,6 @@ defmodule GreenWorker do
 
       defp get_id(ctx), do: GreenWorker.Internal.get_id(ctx, unquote(key))
 
-      ##### Supervisor
-
-      # This alias is available to sub-module Supervisor (lexical scoping)
-      alias __MODULE__, as: ContainingModule
-
-      defmodule Supervisor do
-        @moduledoc false
-
-        use Elixir.Supervisor
-
-        def start_link(gw_name) do
-          Supervisor.start_link(__MODULE__, gw_name)
-        end
-
-        @impl true
-        def init(gw_name) do
-          dynamic_supervisor_init_args = [
-            gw_module: ContainingModule,
-            config: ContainingModule.get_config()
-          ]
-
-          children = [
-            {DynamicSupervisor, name: __MODULE__, strategy: :one_for_one},
-            {GreenWorker.DynamicSupervisorInit, dynamic_supervisor_init_args}
-          ]
-
-          Supervisor.init(children, strategy: :rest_for_one)
-        end
-      end
     end
   end
 
@@ -336,5 +307,5 @@ defmodule GreenWorker do
   defp start_supervised_if({:ok, _}, module, id), do: start_supervised(module, id)
   defp start_supervised_if(error = {:error, _}, _module, _id), do: error
 
-  defp supervisor_name(module), do: :"#{module}.Supervisor"
+  defp supervisor_name(module), do: GreenWorker.Family.Supervisor.dynamic_name(module)
 end

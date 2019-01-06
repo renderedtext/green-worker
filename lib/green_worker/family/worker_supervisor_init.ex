@@ -1,4 +1,4 @@
-defmodule GreenWorker.DynamicSupervisorInit do
+defmodule GreenWorker.Family.WorkerSupervisorInit do
   use GenServer
 
   alias GreenWorker.Queries

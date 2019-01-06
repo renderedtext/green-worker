@@ -4,6 +4,8 @@ defmodule AlternativeWorkerTest do
 
   alias Support.EctoRepo, as: Repo
 
+  import TestHelpers, only: [start_family: 1]
+
   setup do
     assert {:ok, _} = Ecto.Adapters.SQL.query(Repo, "truncate table alternative cascade;")
 
@@ -14,8 +16,7 @@ defmodule AlternativeWorkerTest do
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx = %{id_field: id1, state_field: "initial_state"}
 
-    assert {:ok, sup} =
-             Supervisor.start_link(Support.AlternativeWorker.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} = start_family(Support.AlternativeWorker)
 
     assert {:ok, _} = GreenWorker.store_and_start_supervised(Support.AlternativeWorker, ctx)
 
@@ -35,8 +36,7 @@ defmodule AlternativeWorkerTest do
     ctx2 = %{id_field: id2, state_field: "initial_state"}
     assert {:ok, _} = GreenWorker.store(Support.AlternativeWorker, ctx2)
 
-    assert {:ok, sup} =
-             Supervisor.start_link(Support.AlternativeWorker.Supervisor, strategy: :one_for_one)
+    assert {:ok, sup} = start_family(Support.AlternativeWorker)
 
     assert "really_done" = Support.AlternativeWorker.get_context!(id1).store.state_field
     assert "really_done" = Support.AlternativeWorker.get_context!(id2).store.state_field

@@ -118,7 +118,7 @@ defmodule GreenWorker do
     changeset = Util.get_optional_field(opts, :changeset, {schema, :changeset})
     # Uniquely indexed field name; default `:id`
     key = Util.get_optional_field(opts, :key, :id)
-    state_field = Util.get_optional_field(opts, :state_field, :state)
+    state_field_name = Util.get_optional_field(opts, :state_field_name, :state)
     terminal_states = Util.get_optional_field(opts, :terminal_states, ["done"])
 
     quote do
@@ -129,7 +129,7 @@ defmodule GreenWorker do
       import GreenWorker.Macros
       import GreenWorker.Ctx, only: unquote(GreenWorker.Ctx.auto_import())
 
-      @state_field unquote(state_field)
+      @state_field_name unquote(state_field_name)
 
       def start_link(id) do
         GenServer.start_link(__MODULE__, id, name: name(id))
@@ -146,7 +146,7 @@ defmodule GreenWorker do
           repo: unquote(repo),
           changeset: unquote(changeset),
           key: unquote(key),
-          state_field: unquote(state_field),
+          state_field_name: unquote(state_field_name),
           terminal_states: unquote(terminal_states)
         }
       end
@@ -188,7 +188,8 @@ defmodule GreenWorker do
         new_ctx = context_handler(ctx)
 
         if new_ctx != ctx do
-          Internal.assert_state_field_changed(ctx, new_ctx, unquote(state_field))
+          Internal.assert_state_field_changed(
+            ctx, new_ctx, unquote(state_field_name))
 
           schedule_handling(get_id(ctx))
 

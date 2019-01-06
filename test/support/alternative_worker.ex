@@ -6,7 +6,7 @@ defmodule Support.AlternativeWorker do
     repo: Support.EctoRepo,
     key: :id_field,
     changeset: {Support.AlternativeSchema, :cs},
-    state_field: :state_field,
+    state_field_name: :state_field,
     terminal_states: ["really_done"]
 
 

@@ -25,6 +25,6 @@ defmodule StateFieldFailWorkerTest do
 
     assert_receive {:EXIT, ^pid, error}
     assert String.contains?(
-      error, "ctx changed but ctx.store.@state_field did NOT")
+      error, "ctx changed but ctx.store.@state_field_name did NOT")
   end
 end

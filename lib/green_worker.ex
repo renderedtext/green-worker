@@ -101,6 +101,7 @@ defmodule GreenWorker do
   alias GreenWorker.Util
   alias GreenWorker.Queries
   alias GreenWorker.Internal
+  alias GreenWorker.Ctx
 
   defmodule Behaviour do
     @moduledoc false
@@ -165,16 +166,14 @@ defmodule GreenWorker do
 
       @impl true
       def init(id) do
-        Keyword.put([], unquote(key), id)
-        |> Queries.read(unquote(schema), unquote(repo))
-        |> case do
+        case load(id) do
           nil ->
             {:id_not_found, id}
 
-          stored ->
+          store_data ->
             schedule_handling(id)
 
-            {:ok, GreenWorker.Ctx.new(stored)}
+            {:ok, GreenWorker.Ctx.new(store_data)}
         end
       end
 
@@ -187,21 +186,34 @@ defmodule GreenWorker do
       def handle_cast(:handle_context, ctx) do
         new_ctx = context_handler(ctx)
 
-        if new_ctx != ctx do
-          Internal.assert_state_field_changed(ctx, new_ctx, unquote(state_field_name))
+        keep =
+          case new_ctx.store do
+            :reload ->
+              Ctx.new(load(ctx.store.unquote(key)))
 
-          schedule_handling(get_id(ctx))
+            _ ->
+              if new_ctx.store != ctx.store do
+                Internal.assert_state_field_changed(ctx, new_ctx, unquote(state_field_name))
 
-          {:ok, _} = Queries.update(ctx, new_ctx, unquote(changeset), unquote(repo))
-        end
+                schedule_handling(get_id(ctx))
 
-        {:noreply, new_ctx}
+                {:ok, _} = Queries.update(ctx, new_ctx, unquote(changeset), unquote(repo))
+              end
+
+              new_ctx
+          end
+
+        {:noreply, keep}
       end
 
       defp name(id), do: GreenWorker.Internal.name(__MODULE__, id)
 
       defp get_id(ctx), do: GreenWorker.Internal.get_id(ctx, unquote(key))
 
+      defp load(id) do
+        Keyword.put([], unquote(key), id)
+        |> Queries.read(unquote(schema), unquote(repo))
+      end
     end
   end
 

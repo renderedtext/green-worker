@@ -22,8 +22,5 @@ defmodule Support.AlternativeWorker do
   #   ctx
   # end
 
-  handle state: "really_done" do
-    ctx
-    |> IO.inspect(label: "GGGGGGGGGGGGGGGGGGGG done")
-  end
+  handle state: "really_done", return: :default
 end

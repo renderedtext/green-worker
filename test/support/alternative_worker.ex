@@ -17,10 +17,5 @@ defmodule Support.AlternativeWorker do
     |> IO.inspect(label: "GGGGGGGGGGGGGGGGGGGG 1")
   end
 
-  # @impl true
-  # def context_handler(ctx = %{:store => %{:state_field => "really_done"}}) do
-  #   ctx
-  # end
-
   handle state: "really_done", return: :default
 end

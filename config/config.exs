@@ -2,6 +2,10 @@ use Mix.Config
 
 config :green_worker, ecto_repos: [Support.EctoRepo]
 
+config :swarm,
+  # Needed for tests to start immediately.
+  sync_nodes_timeout: 0
+
 # config :watchman,
 #     host: "statsd",
 #     port: 8125,

@@ -5,6 +5,16 @@ defmodule GreenWorker.Internal do
 
   def name(module, id), do: :"#{module}_#{id}"
 
+  def via_tuple(module, id), do: {:via, :swarm, name(module, id)}
+
+  def whereis(module, id) do
+    Swarm.whereis_name(name(module, id))
+    |> case do
+      :undefined -> nil
+      pid -> pid
+    end
+  end
+
   @doc """
   Used when context is chanded to assert that state field changed also
   """

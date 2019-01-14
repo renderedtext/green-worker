@@ -209,7 +209,7 @@ defmodule GreenWorker do
         {:noreply, keep}
       end
 
-      defp name(id), do: GreenWorker.Internal.name(__MODULE__, id)
+      defp name(id), do: GreenWorker.Internal.via_tuple(__MODULE__, id)
 
       defp get_id(ctx), do: GreenWorker.Internal.get_id(ctx, unquote(key_field_name))
 
@@ -306,8 +306,7 @@ defmodule GreenWorker do
     Return pid of specified worker if running or nil otherwise.
   """
   def whereis(module, id) do
-    GreenWorker.Internal.name(module, id)
-    |> Process.whereis()
+    GreenWorker.Internal.whereis(module, id)
   end
 
   defp insert_idempotency(insert_resp = {:ok, _}, _key), do: insert_resp

@@ -146,6 +146,12 @@ defmodule GreenWorkerTest do
 
     GenServer.stop(pid)
 
+    # Time needed for Swarm to consildate
+    :timer.sleep 50
+
+    assert nil == GreenWorker.Internal.whereis(Support.BasicTransitionWithChangeset, id1)
+
+
     assert {:ok, pid2} = GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
 
     assert pid != pid2
@@ -189,6 +195,11 @@ defmodule GreenWorkerTest do
 
     assert :ok = GenServer.stop(pid, :normal)
     refute Process.alive?(pid)
+
+    # Time needed for Swarm to consildate
+    :timer.sleep 50
+
+    assert nil == GreenWorker.Internal.whereis(Support.BasicTransitionWithChangeset, id1)
 
     catch_exit(Support.BasicTransitionWithChangeset.get_context!(id1))
 

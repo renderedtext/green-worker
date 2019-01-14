@@ -168,7 +168,7 @@ defmodule GreenWorker do
       def init(id) do
         case load(id) do
           nil ->
-            {:id_not_found, id}
+            {:id_not_found, {__MODULE__, id}}
 
           store_data ->
             schedule_handling(id)
@@ -292,6 +292,9 @@ defmodule GreenWorker do
     :exit, {:noproc, {GenServer, :call, _}} ->
       case start_supervised(module, id) do
         {:ok, _} -> module.get_context!(id)
+
+        {:error, {:already_started, _}} -> module.get_context!(id)
+
         {:error, error} -> throw(error)
       end
   end
@@ -317,6 +320,8 @@ defmodule GreenWorker do
   defp insert_idempotency(insert_resp = {:error, _}, _key), do: insert_resp
 
   defp start_supervised_if({:ok, _}, module, id), do: start_supervised(module, id)
+  defp start_supervised_if(error = {:error, {:already_started, _}}, module, id),
+    do: start_supervised(module, id)
   defp start_supervised_if(error = {:error, _}, _module, _id), do: error
 
   defp supervisor_name(module), do: GreenWorker.Family.Supervisor.dynamic_name(module)

@@ -14,18 +14,20 @@ defmodule GreenWorker.Ctx do
 
   def auto_import, do: [put_store: 2, put_store: 3, put_cache: 2, put_cache: 3]
 
-  def get_store!(ctx = %__MODULE__{}, key), do: Map.fetch!(ctx.store, key)
+  def get_store!(ctx = %__MODULE__{}, key_field_name) do
+    Map.fetch!(ctx.store, key_field_name)
+  end
 
   def put_store(ctx = %__MODULE__{}, value), do: put(ctx, :store, value)
 
-  def put_store(ctx = %__MODULE__{}, key, value) do
-    put_store(ctx, Map.put(ctx.store, key, value))
+  def put_store(ctx = %__MODULE__{}, key_field_name, value) do
+    put_store(ctx, Map.put(ctx.store, key_field_name, value))
   end
 
   def put_cache(ctx = %__MODULE__{}, value), do: put(ctx, :cache, value)
 
-  def put_cache(ctx = %__MODULE__{}, key, value) do
-    put_cache(ctx, Map.put(ctx.cache, key, value))
+  def put_cache(ctx = %__MODULE__{}, key_field_name, value) do
+    put_cache(ctx, Map.put(ctx.cache, key_field_name, value))
   end
 
   defp put(ctx = %__MODULE__{}, :store, value), do: new(value, ctx.cache)

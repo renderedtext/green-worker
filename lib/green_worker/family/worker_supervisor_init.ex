@@ -41,7 +41,7 @@ defmodule GreenWorker.Family.WorkerSupervisorInit do
       config.terminal_states
     )
     |> Enum.map(fn ctx ->
-      GreenWorker.start_supervised(gw_module, Map.get(ctx, config.key))
+      GreenWorker.start_supervised(gw_module, Map.get(ctx, config.key_field_name))
     end)
   end
 end

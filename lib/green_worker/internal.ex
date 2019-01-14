@@ -1,7 +1,7 @@
 defmodule GreenWorker.Internal do
   @moduledoc false
 
-  def get_id(ctx, key), do: Map.get(ctx.store, key)
+  def get_id(ctx, key_field_name), do: Map.get(ctx.store, key_field_name)
 
   def name(module, id), do: :"#{module}_#{id}"
 

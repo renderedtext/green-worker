@@ -87,15 +87,18 @@ defmodule GreenWorker do
 
   Optional:
 
-  - `changeset` is Ecto changeset used to validate `schema` before it is persisted.
+  - `changeset` - Ecto changeset used to validate `schema` before it is persisted.
   `changeset` has `{module, function}` form.
   It is called as `module.function/2`.
   Defaults to `{schema, :changeset}`.
 
-  - `key` uniquely indexed field in `schema` (usually primary key) used to
-  identify the row in the DB table in load/store operations.
+  - `key_field_name` - uniquely indexed field in `schema` (usually primary key)
+  used to identify the row in the DB table in load/store operations.
   Defaults to `:id`.
 
+  - `state_field_name` - name of the field in the schema containing state.
+
+  - `terminal_states` - list of terminal states.
   """
 
   alias GreenWorker.Util
@@ -118,7 +121,7 @@ defmodule GreenWorker do
     # Calls `M.F/2`
     changeset = Util.get_optional_field(opts, :changeset, {schema, :changeset})
     # Uniquely indexed field name; default `:id`
-    key = Util.get_optional_field(opts, :key, :id)
+    key_field_name = Util.get_optional_field(opts, :key_field_name, :id)
     state_field_name = Util.get_optional_field(opts, :state_field_name, :state)
     terminal_states = Util.get_optional_field(opts, :terminal_states, ["done"])
 
@@ -146,7 +149,7 @@ defmodule GreenWorker do
           schema: unquote(schema),
           repo: unquote(repo),
           changeset: unquote(changeset),
-          key: unquote(key),
+          key_field_name: unquote(key_field_name),
           state_field_name: unquote(state_field_name),
           terminal_states: unquote(terminal_states)
         }
@@ -189,7 +192,7 @@ defmodule GreenWorker do
         keep =
           case new_ctx.store do
             :reload ->
-              Ctx.new(load(ctx.store.unquote(key)))
+              Ctx.new(load(ctx.store.unquote(key_field_name)))
 
             _ ->
               if new_ctx.store != ctx.store do
@@ -208,10 +211,10 @@ defmodule GreenWorker do
 
       defp name(id), do: GreenWorker.Internal.name(__MODULE__, id)
 
-      defp get_id(ctx), do: GreenWorker.Internal.get_id(ctx, unquote(key))
+      defp get_id(ctx), do: GreenWorker.Internal.get_id(ctx, unquote(key_field_name))
 
       defp load(id) do
-        Keyword.put([], unquote(key), id)
+        Keyword.put([], unquote(key_field_name), id)
         |> Queries.read(unquote(schema), unquote(repo))
       end
     end
@@ -223,17 +226,17 @@ defmodule GreenWorker do
     Before any other action check if process already exists.
   """
   def store_and_start_supervised(module, initial) do
-    %{key: key} = module.get_config()
+    %{key_field_name: key_field_name} = module.get_config()
 
     id =
       GreenWorker.Ctx.new(initial)
-      |> GreenWorker.Internal.get_id(key)
+      |> GreenWorker.Internal.get_id(key_field_name)
 
     if pid = whereis(module, id) do
       {:ok, pid}
     else
       store(module, initial)
-      |> insert_idempotency(key)
+      |> insert_idempotency(key_field_name)
       |> start_supervised_if(module, id)
     end
   end
@@ -311,9 +314,9 @@ defmodule GreenWorker do
 
   defp insert_idempotency(
          {:error, %{action: :insert, errors: [{k, {"has already been taken", _}}]}},
-         key
+         key_field_name
        )
-       when k == key do
+       when k == key_field_name do
     {:ok, :duplicate}
   end
 

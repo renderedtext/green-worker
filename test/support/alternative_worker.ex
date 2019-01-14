@@ -4,7 +4,7 @@ defmodule Support.AlternativeWorker do
   use GreenWorker,
     schema: Support.AlternativeSchema,
     repo: Support.EctoRepo,
-    key: :id_field,
+    key_field_name: :id_field,
     changeset: {Support.AlternativeSchema, :cs},
     state_field_name: :state_field,
     terminal_states: ["really_done"]

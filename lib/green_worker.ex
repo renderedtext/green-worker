@@ -202,24 +202,7 @@ defmodule GreenWorker do
       def handle_cast(:handle_context, ctx) do
         new_ctx = context_handler(ctx)
 
-        keep =
-          case new_ctx.store do
-            :reload ->
-              Ctx.new(load(ctx.store.unquote(key_field_name)))
-
-            _ ->
-              if new_ctx.store != ctx.store do
-                Internal.assert_state_field_changed(ctx, new_ctx, unquote(state_field_name))
-
-                schedule_handling(get_id(ctx))
-
-                {:ok, _} = Queries.update(ctx, new_ctx, unquote(changeset), unquote(repo))
-              end
-
-              new_ctx
-          end
-
-        {:noreply, keep}
+        {:noreply, handle_context_post_processing(ctx, new_ctx)}
         |> timeout_in_return_tuple()
       end
 
@@ -242,6 +225,22 @@ defmodule GreenWorker do
           Tuple.append(ret_tuple, unquote(ttl_in_terminal_state))
         else
           Tuple.append(ret_tuple, unquote(rehandling_period))
+        end
+      end
+
+      defp handle_context_post_processing(ctx, new_ctx) do
+        cond do
+          new_ctx.store == :reload ->
+            Ctx.new(load(ctx.store.unquote(key_field_name)))
+
+          ctx.store != new_ctx.store ->
+            Internal.assert_state_field_changed(ctx, new_ctx, unquote(state_field_name))
+            schedule_handling(get_id(ctx))
+            {:ok, _} = Queries.update(ctx, new_ctx, unquote(changeset), unquote(repo))
+            new_ctx
+
+          true ->
+            new_ctx
         end
       end
 

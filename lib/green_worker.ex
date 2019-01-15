@@ -124,6 +124,9 @@ defmodule GreenWorker do
     key_field_name = Util.get_optional_field(opts, :key_field_name, :id)
     state_field_name = Util.get_optional_field(opts, :state_field_name, :state)
     terminal_states = Util.get_optional_field(opts, :terminal_states, ["done"])
+    # After "ttl_in_terminal_state" milliseconds of inactivity,
+    # worker will be stopped.
+    ttl_in_terminal_state = Util.get_optional_field(opts, :ttl_in_terminal_state, :timer.minutes(30))
 
     quote do
       @behaviour GreenWorker.Behaviour
@@ -151,7 +154,8 @@ defmodule GreenWorker do
           changeset: unquote(changeset),
           key_field_name: unquote(key_field_name),
           state_field_name: unquote(state_field_name),
-          terminal_states: unquote(terminal_states)
+          terminal_states: unquote(terminal_states),
+          ttl_in_terminal_state: unquote(ttl_in_terminal_state),
         }
       end
 
@@ -183,6 +187,7 @@ defmodule GreenWorker do
       @impl true
       def handle_call(:get_context, _from, ctx) do
         {:reply, ctx, ctx}
+        |> timeout_in_return_tuple()
       end
 
       @impl true
@@ -207,7 +212,28 @@ defmodule GreenWorker do
           end
 
         {:noreply, keep}
+        |> timeout_in_return_tuple()
       end
+
+      @impl true
+      def handle_info(:timeout, ctx) do
+        {:stop, :normal, ctx}
+      end
+
+      defp timeout_in_return_tuple(ret_tuple) do
+        ctx = ret_tuple |> Tuple.to_list |> List.last
+
+        if in_terminal_state(ctx) do
+          Tuple.append(ret_tuple, unquote(ttl_in_terminal_state))
+        else
+          ret_tuple
+        end
+      end
+
+      defp in_terminal_state(ctx), do: get_state_name(ctx) in unquote(terminal_states)
+
+      defp get_state_name(ctx), do: ctx.store.unquote(state_field_name)
+
 
       defp name(id), do: GreenWorker.Internal.via_tuple(__MODULE__, id)
 
@@ -219,6 +245,8 @@ defmodule GreenWorker do
       end
     end
   end
+
+  ############################# __using__ ##############################
 
   @doc """
     Call `store/2` and if successful call `start_supervised/2`.
@@ -322,7 +350,7 @@ defmodule GreenWorker do
   defp insert_idempotency(insert_resp = {:error, _}, _key), do: insert_resp
 
   defp start_supervised_if({:ok, _}, module, id), do: start_supervised(module, id)
-  defp start_supervised_if(error = {:error, {:already_started, _}}, module, id),
+  defp start_supervised_if(_error = {:error, {:already_started, _}}, module, id),
     do: start_supervised(module, id)
   defp start_supervised_if(error = {:error, _}, _module, _id), do: error
 

@@ -99,6 +99,12 @@ defmodule GreenWorker do
   - `state_field_name` - name of the field in the schema containing state.
 
   - `terminal_states` - list of terminal states.
+
+  - ttl_in_terminal_state - worker will be stopped after `ttl_in_terminal_state`
+  period of inactivity.
+
+  - rehandling_period - state handling will be rescheduled after `rehandling_period`
+  of inactivity.
   """
 
   alias GreenWorker.Util
@@ -127,6 +133,7 @@ defmodule GreenWorker do
     # After "ttl_in_terminal_state" milliseconds of inactivity,
     # worker will be stopped.
     ttl_in_terminal_state = Util.get_optional_field(opts, :ttl_in_terminal_state, :timer.minutes(30))
+    rehandling_period = Util.get_optional_field(opts, :rehandling_period, :infinity)
 
     quote do
       @behaviour GreenWorker.Behaviour
@@ -156,6 +163,7 @@ defmodule GreenWorker do
           state_field_name: unquote(state_field_name),
           terminal_states: unquote(terminal_states),
           ttl_in_terminal_state: unquote(ttl_in_terminal_state),
+          rehandling_period: unquote(rehandling_period)
         }
       end
 
@@ -217,23 +225,29 @@ defmodule GreenWorker do
 
       @impl true
       def handle_info(:timeout, ctx) do
-        {:stop, :normal, ctx}
+        if in_terminal_state?(ctx) do
+          {:stop, :shutdown, ctx}
+        else
+          schedule_handling(get_id(ctx))
+
+          {:noreply, ctx}
+          |> timeout_in_return_tuple()
+        end
       end
 
       defp timeout_in_return_tuple(ret_tuple) do
         ctx = ret_tuple |> Tuple.to_list |> List.last
 
-        if in_terminal_state(ctx) do
+        if in_terminal_state?(ctx) do
           Tuple.append(ret_tuple, unquote(ttl_in_terminal_state))
         else
-          ret_tuple
+          Tuple.append(ret_tuple, unquote(rehandling_period))
         end
       end
 
-      defp in_terminal_state(ctx), do: get_state_name(ctx) in unquote(terminal_states)
+      defp in_terminal_state?(ctx), do: get_state_name(ctx) in unquote(terminal_states)
 
       defp get_state_name(ctx), do: ctx.store.unquote(state_field_name)
-
 
       defp name(id), do: GreenWorker.Internal.via_tuple(__MODULE__, id)
 

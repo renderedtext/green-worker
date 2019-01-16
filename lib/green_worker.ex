@@ -197,7 +197,7 @@ defmodule GreenWorker do
           ctx
         else
           :timer.sleep(sleep)
-          wait_for_state!(id, state_name, timeout - sleep)
+          wait_for_state!(id, state_name, timeout - sleep, sleep)
         end
       end
 

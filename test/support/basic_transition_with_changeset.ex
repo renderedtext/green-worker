@@ -9,14 +9,14 @@ defmodule Support.BasicTransitionWithChangeset do
   @impl true
   def context_handler(ctx = %{:store => %{:state => "init"}}) do
     ctx
-    |> Map.put(:state, "pending")
+    |> put_store(:state, "pending")
     |> IO.inspect(label: "GGGGGGGGGGGGGGG state exit")
   end
 
   @impl true
   def context_handler(ctx = %{:store => %{:state => "pending"}}) do
     ctx
-    |> Map.put(:state, "done")
+    |> put_store(:state, "done")
     |> IO.inspect(label: "GGGGGGGGGGGGGGG state exit")
   end
 

@@ -111,6 +111,7 @@ defmodule GreenWorker do
   alias GreenWorker.Queries
   alias GreenWorker.Internal
   alias GreenWorker.Ctx
+  alias GreenWorker.Exceptions.DeadlineExceededError
 
   defmodule Behaviour do
     @moduledoc false
@@ -177,6 +178,25 @@ defmodule GreenWorker do
 
       def schedule_handling(id) do
         GenServer.cast(name(id), :handle_context)
+      end
+
+      def wait_for_state!(id, state_name, timeout \\ 1_000, sleep \\ 100)
+
+      def wait_for_state!(_id, state_name, timeout, _sleep) when timeout < 0 do
+        raise DeadlineExceededError,
+          "Deadline expired before '#{state_name}' state was reached"
+      end
+
+      def wait_for_state!(id, state_name, timeout, sleep) do
+        ctx = get_context!(id)
+        current_state_name = get_state_name(ctx)
+
+        if current_state_name == state_name do
+          ctx
+        else
+          :timer.sleep(sleep)
+          wait_for_state!(id, state_name, timeout - sleep)
+        end
       end
 
       @impl true
@@ -348,6 +368,10 @@ defmodule GreenWorker do
   """
   def whereis(module, id) do
     GreenWorker.Internal.whereis(module, id)
+  end
+
+  def wait_for_state(module, id, state_name, timeout) do
+    module.wait_for_state!(id, state_name, timeout)
   end
 
   defp insert_idempotency(insert_resp = {:ok, _}, _key), do: insert_resp

@@ -113,6 +113,8 @@ defmodule GreenWorker do
   alias GreenWorker.Ctx
   alias GreenWorker.Exceptions.DeadlineExceededError
 
+  require GreenWorker.Internal
+
   defmodule Behaviour do
     @moduledoc false
 
@@ -337,41 +339,17 @@ defmodule GreenWorker do
 
   If worker start fails, return error.
   """
-  def get_context(module, id) do
-    case get_context!(module, id) do
-      error = {:error, _} -> error
-      response -> {:ok, response}
-    end
-  rescue
-    error ->
-      {:error, error}
-  catch
-    :throw, error ->
-      {:error, error}
-  end
+  Internal.generate_with_ensure_started(:get_context, 2)
 
-  def get_context!(module, id) do
-    module.get_context!(id)
-  catch
-    :exit, {:noproc, {GenServer, :call, _}} ->
-      case start_supervised(module, id) do
-        {:ok, _} -> module.get_context!(id)
-
-        {:error, {:already_started, _}} -> module.get_context!(id)
-
-        {:error, error} -> throw(error)
-      end
-  end
+  Internal.generate_with_ensure_started(:wait_for_state, 3)
+  Internal.generate_with_ensure_started(:wait_for_state, 4)
+  Internal.generate_with_ensure_started(:wait_for_state, 5)
 
   @doc """
     Return pid of specified worker if running or nil otherwise.
   """
   def whereis(module, id) do
     GreenWorker.Internal.whereis(module, id)
-  end
-
-  def wait_for_state(module, id, state_name, timeout) do
-    module.wait_for_state!(id, state_name, timeout)
   end
 
   defp insert_idempotency(insert_resp = {:ok, _}, _key), do: insert_resp

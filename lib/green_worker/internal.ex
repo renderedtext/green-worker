@@ -36,4 +36,46 @@ defmodule GreenWorker.Internal do
     ]
     |> Enum.join(" ")
   end
+
+  defmacro generate_with_ensure_started(fname, arg_count) when arg_count < 2 do
+    raise "arg_count must be 2 or greater"
+  end
+
+  defmacro generate_with_ensure_started(fname, arg_count) do
+    arg_count |> IO.inspect(label: "QQQQQQQQQQQQQQQQQQQQQQQQQQ")
+    bang_fname = Atom.to_string(fname) <> "!"
+    args =
+      List.duplicate(1, arg_count - 2)
+      |> Enum.with_index()
+      |> Enum.map(fn {_, index} -> Macro.var(:"a#{index}", __MODULE__) end)
+    args |> IO.inspect(label: "FFFFFFFFFFF")
+
+    quote do
+      def unquote(:"#{fname}")(module, id, unquote_splicing(args)) do
+        case unquote(:"#{bang_fname}")(module, id, unquote_splicing(args)) do
+          error = {:error, _} -> error
+          response -> {:ok, response}
+        end
+      rescue
+        error ->
+          {:error, error}
+      catch
+        :throw, error ->
+          {:error, error}
+      end
+
+      def unquote(:"#{bang_fname}")(module, id, unquote_splicing(args)) do
+        module.unquote(:"#{bang_fname}")(id, unquote_splicing(args))
+      catch
+        :exit, {:noproc, {GenServer, :call, _}} ->
+          case start_supervised(module, id) do
+            {:ok, _} -> module.get_context!(id)
+
+            {:error, {:already_started, _}} -> module.get_context!(id)
+
+            {:error, error} -> throw(error)
+          end
+     end
+    end
+  end
 end

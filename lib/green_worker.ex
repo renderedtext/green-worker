@@ -184,9 +184,9 @@ defmodule GreenWorker do
 
       def wait_for_state!(id, state_name, timeout \\ 1_000, sleep \\ 100)
 
-      def wait_for_state!(_id, state_name, timeout, _sleep) when timeout < 0 do
+      def wait_for_state!(_id, state_name, timeout, _sleep) when timeout <= 0 do
         raise DeadlineExceededError,
-          "Deadline expired before '#{state_name}' state was reached"
+          "#{__MODULE__} failed: deadline expired before '#{state_name}' state was reached"
       end
 
       def wait_for_state!(id, state_name, timeout, sleep) do
@@ -196,8 +196,10 @@ defmodule GreenWorker do
         if current_state_name == state_name do
           ctx
         else
-          :timer.sleep(sleep)
-          wait_for_state!(id, state_name, timeout - sleep, sleep)
+          new_timeout = timeout - sleep
+          if new_timeout > 0, do: :timer.sleep(sleep)
+
+          wait_for_state!(id, state_name, new_timeout, sleep)
         end
       end
 

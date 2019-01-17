@@ -341,6 +341,9 @@ defmodule GreenWorker do
   """
   Internal.generate_with_ensure_started(:get_context, 2)
 
+  @doc """
+  Start worker if not running and wait for desired state.
+  """
   Internal.generate_with_ensure_started(:wait_for_state, 3)
   Internal.generate_with_ensure_started(:wait_for_state, 4)
   Internal.generate_with_ensure_started(:wait_for_state, 5)

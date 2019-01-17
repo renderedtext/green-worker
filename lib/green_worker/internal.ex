@@ -1,5 +1,7 @@
 defmodule GreenWorker.Internal do
-  @moduledoc false
+  @moduledoc """
+  Functions and macros used by GreenWorker module.
+  """
 
   def get_id(ctx, key_field_name), do: Map.get(ctx.store, key_field_name)
 
@@ -37,18 +39,26 @@ defmodule GreenWorker.Internal do
     |> Enum.join(" ")
   end
 
-  defmacro generate_with_ensure_started(fname, arg_count) when arg_count < 2 do
+  @doc """
+  Used from GreenWorker module.
+
+  ## Example
+      generate_with_ensure_started(:get_context, 2)
+
+  Generates functions `GreenWorker.get_context(SomeWorker, id)` and
+  `GreenWorker.get_context!(SomeWorker, id)`.
+  Both call `SomeWorker.get_context!(id)`
+  """
+  defmacro generate_with_ensure_started(_fname, arg_count) when arg_count < 2 do
     raise "arg_count must be 2 or greater"
   end
 
   defmacro generate_with_ensure_started(fname, arg_count) do
-    arg_count |> IO.inspect(label: "QQQQQQQQQQQQQQQQQQQQQQQQQQ")
     bang_fname = Atom.to_string(fname) <> "!"
     args =
       List.duplicate(1, arg_count - 2)
       |> Enum.with_index()
       |> Enum.map(fn {_, index} -> Macro.var(:"a#{index}", __MODULE__) end)
-    args |> IO.inspect(label: "FFFFFFFFFFF")
 
     quote do
       def unquote(:"#{fname}")(module, id, unquote_splicing(args)) do

@@ -49,16 +49,11 @@ defmodule GreenWorker.Internal do
   `GreenWorker.get_context!(SomeWorker, id)`.
   Both call `SomeWorker.get_context!(id)`
   """
-  defmacro generate_with_ensure_started(_fname, arg_count) when arg_count < 2 do
-    raise "arg_count must be 2 or greater"
-  end
-
-  defmacro generate_with_ensure_started(fname, arg_count) do
+  defmacro generate_with_ensure_started(fname, additional_args \\ []) do
     bang_fname = Atom.to_string(fname) <> "!"
     args =
-      List.duplicate(1, arg_count - 2)
-      |> Enum.with_index()
-      |> Enum.map(fn {_, index} -> Macro.var(:"a#{index}", __MODULE__) end)
+      additional_args
+      |> Enum.map(fn arg -> Macro.var(arg, __MODULE__) end)
 
     quote do
       def unquote(:"#{fname}")(module, id, unquote_splicing(args)) do
@@ -74,6 +69,9 @@ defmodule GreenWorker.Internal do
           {:error, error}
       end
 
+      @doc """
+      Similar to function without "bang" (`!`) except it raises/throws exceptions.
+      """
       def unquote(:"#{bang_fname}")(module, id, unquote_splicing(args)) do
         module.unquote(:"#{bang_fname}")(id, unquote_splicing(args))
       catch

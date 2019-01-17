@@ -339,14 +339,14 @@ defmodule GreenWorker do
 
   If worker start fails, return error.
   """
-  Internal.generate_with_ensure_started(:get_context, 2)
+  Internal.generate_with_ensure_started(:get_context)
 
   @doc """
   Start worker if not running and wait for desired state.
   """
-  Internal.generate_with_ensure_started(:wait_for_state, 3)
-  Internal.generate_with_ensure_started(:wait_for_state, 4)
-  Internal.generate_with_ensure_started(:wait_for_state, 5)
+  Internal.generate_with_ensure_started(:wait_for_state, [:state])
+  Internal.generate_with_ensure_started(:wait_for_state, [:state, :timeout])
+  Internal.generate_with_ensure_started(:wait_for_state, [:state, :timeout, :sleep])
 
   @doc """
     Return pid of specified worker if running or nil otherwise.

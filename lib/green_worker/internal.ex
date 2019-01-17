@@ -49,15 +49,22 @@ defmodule GreenWorker.Internal do
   `GreenWorker.get_context!(SomeWorker, id)`.
   Both call `SomeWorker.get_context!(id)`
   """
-  defmacro generate_with_ensure_started(fname, additional_args \\ []) do
+  defmacro generate_with_ensure_started(fname, additional_args \\ [], defaults \\ []) do
     bang_fname = Atom.to_string(fname) <> "!"
-    args =
-      additional_args
-      |> Enum.map(fn arg -> Macro.var(arg, __MODULE__) end)
+
+    defaults = adjust_defaults(defaults, additional_args)
+
+    if length(additional_args) != length(defaults) do
+      raise "Size mismatch: length(additional_args) == #{length(additional_args)} and length(defaults) == #{length(defaults)}"
+    end
+
+    args = Enum.map(additional_args, fn arg -> Macro.var(arg, __MODULE__) end)
+
+    params = create_params(args, defaults)
 
     quote do
-      def unquote(:"#{fname}")(module, id, unquote_splicing(args)) do
-        case unquote(:"#{bang_fname}")(module, id, unquote_splicing(args)) do
+      def unquote(:"#{fname}")(family, id, unquote_splicing(params)) do
+        case unquote(:"#{bang_fname}")(family, id, unquote_splicing(args)) do
           error = {:error, _} -> error
           response -> {:ok, response}
         end
@@ -72,18 +79,33 @@ defmodule GreenWorker.Internal do
       @doc """
       Similar to function without "bang" (`!`) except it raises/throws exceptions.
       """
-      def unquote(:"#{bang_fname}")(module, id, unquote_splicing(args)) do
-        module.unquote(:"#{bang_fname}")(id, unquote_splicing(args))
+      def unquote(:"#{bang_fname}")(family, id, unquote_splicing(params)) do
+        family.unquote(:"#{bang_fname}")(id, unquote_splicing(args))
       catch
         :exit, {:noproc, {GenServer, :call, _}} ->
-          case start_supervised(module, id) do
-            {:ok, _} -> module.get_context!(id)
+          case start_supervised(family, id) do
+            {:ok, _} -> family.get_context!(id)
 
-            {:error, {:already_started, _}} -> module.get_context!(id)
+            {:error, {:already_started, _}} -> family.get_context!(id)
 
             {:error, error} -> throw(error)
           end
-     end
+      end
     end
+  end
+
+  defp adjust_defaults(_defaults = [], additional_args),
+    do: List.duplicate(:none, length(additional_args))
+
+  defp adjust_defaults(defaults, _additional_args), do: defaults
+
+  defp create_params(args, defaults) do
+    args
+    |> Enum.zip(defaults)
+    |> Enum.map(fn
+      {var, :none} -> var
+
+      {var, default} -> quote do unquote(var) \\ unquote(default) end
+    end)
   end
 end

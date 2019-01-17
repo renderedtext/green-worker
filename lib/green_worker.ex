@@ -288,30 +288,30 @@ defmodule GreenWorker do
 
     Before any other action check if process already exists.
   """
-  def store_and_start_supervised(module, initial) do
-    %{key_field_name: key_field_name} = module.get_config()
+  def store_and_start_supervised(family, initial) do
+    %{key_field_name: key_field_name} = family.get_config()
 
     id =
       GreenWorker.Ctx.new(initial)
       |> GreenWorker.Internal.get_id(key_field_name)
 
-    if pid = whereis(module, id) do
+    if pid = whereis(family, id) do
       {:ok, pid}
     else
-      store(module, initial)
+      store(family, initial)
       |> insert_idempotency(key_field_name)
-      |> start_supervised_if(module, id)
+      |> start_supervised_if(family, id)
     end
   end
 
   @doc """
   Persist initial context into DB.
 
-  `initial` is sanitized through changeset specified in `module` before it is
+  `initial` is sanitized through changeset specified in `family` before it is
   persisted.
   """
-  def store(module, initial) do
-    %{schema: schema, repo: repo, changeset: changeset} = module.get_config()
+  def store(family, initial) do
+    %{schema: schema, repo: repo, changeset: changeset} = family.get_config()
 
     Queries.insert(initial, changeset, schema, repo)
   end
@@ -326,11 +326,11 @@ defmodule GreenWorker do
 
       {:ok, pid} = start_supervised(WorkerModule, "worker_unique_id")
   """
-  def start_supervised(module, id) when is_binary(id) do
-    if pid = whereis(module, id) do
+  def start_supervised(family, id) when is_binary(id) do
+    if pid = whereis(family, id) do
       {:ok, pid}
     else
-      DynamicSupervisor.start_child(supervisor_name(module), {module, id})
+      DynamicSupervisor.start_child(supervisor_name(family), {family, id})
     end
   end
 
@@ -338,21 +338,33 @@ defmodule GreenWorker do
   Start worker if not running and return context.
 
   If worker start fails, return error.
+
+  Parameters:
+  - `family` - worker familly
+  - `id` - unique worker id within the familly
   """
   Internal.generate_with_ensure_started(:get_context)
 
   @doc """
   Start worker if not running and wait for desired state.
+
+  Parameters:
+  - `family` - worker familly
+  - `id` - unique worker id within the familly
+  - `state` - desired state.
+  - `timeout` - maximum time to wait before returning failure.
+  - `sleep` - sleep period between two `get_context` calls.
   """
-  Internal.generate_with_ensure_started(:wait_for_state, [:state])
-  Internal.generate_with_ensure_started(:wait_for_state, [:state, :timeout])
-  Internal.generate_with_ensure_started(:wait_for_state, [:state, :timeout, :sleep])
+  Internal.generate_with_ensure_started(:wait_for_state,
+    [:state, :timeout, :sleep],
+    [:none, 1_000, 100]
+  )
 
   @doc """
     Return pid of specified worker if running or nil otherwise.
   """
-  def whereis(module, id) do
-    GreenWorker.Internal.whereis(module, id)
+  def whereis(family, id) do
+    GreenWorker.Internal.whereis(family, id)
   end
 
   defp insert_idempotency(insert_resp = {:ok, _}, _key), do: insert_resp

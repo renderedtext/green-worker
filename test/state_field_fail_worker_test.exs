@@ -16,7 +16,7 @@ defmodule StateFieldFailWorkerTest do
     id = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx = %{id: id, state: "init"}
 
-    assert {:ok, sup} = start_family(StateFieldFailWorker)
+    start_family(StateFieldFailWorker)
 
     Process.flag(:trap_exit, true)
     assert {:ok, pid} = GreenWorker.store_and_start_supervised(StateFieldFailWorker, ctx)

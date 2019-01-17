@@ -16,7 +16,7 @@ defmodule AlternativeWorkerTest do
     id1 = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx = %{id_field: id1, state_field: "initial_state"}
 
-    assert {:ok, sup} = start_family(Support.AlternativeWorker)
+    start_family(Support.AlternativeWorker)
 
     assert {:ok, _} = GreenWorker.store_and_start_supervised(Support.AlternativeWorker, ctx)
 
@@ -24,8 +24,6 @@ defmodule AlternativeWorkerTest do
     assert id1 == store.id_field
     assert "really_done" == store.state_field
     assert %{id: ^id1} = cache
-
-    Supervisor.stop(sup)
   end
 
   test "automatic dynamic supervisor initialization" do
@@ -36,11 +34,9 @@ defmodule AlternativeWorkerTest do
     ctx2 = %{id_field: id2, state_field: "initial_state"}
     assert {:ok, _} = GreenWorker.store(Support.AlternativeWorker, ctx2)
 
-    assert {:ok, sup} = start_family(Support.AlternativeWorker)
+    start_family(Support.AlternativeWorker)
 
     assert "really_done" = Support.AlternativeWorker.get_context!(id1).store.state_field
     assert "really_done" = Support.AlternativeWorker.get_context!(id2).store.state_field
-
-    Supervisor.stop(sup)
   end
 end

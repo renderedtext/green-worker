@@ -16,7 +16,7 @@ defmodule TerminalStateTest do
     id = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx = %{id: id, state: "done"}
 
-    assert {:ok, sup} = start_family(Worker)
+    start_family(Worker)
 
     assert {:ok, pid} = GreenWorker.store_and_start_supervised(Worker, ctx)
     assert Process.alive?(pid)
@@ -29,7 +29,7 @@ defmodule TerminalStateTest do
     id = "86781246-0847-11e9-b6f4-482ae31ad2de"
     ctx = %{id: id, state: "done"}
 
-    assert {:ok, sup} = start_family(Worker)
+    start_family(Worker)
 
     assert {:ok, pid} = GreenWorker.store_and_start_supervised(Worker, ctx)
     assert Process.alive?(pid)

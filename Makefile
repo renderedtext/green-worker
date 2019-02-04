@@ -25,7 +25,7 @@ APP_VSN=`grep 'version:' mix.exs | cut -d '"' -f2`
 
 HOME_DIR=/home/dev
 REPO_DIR=$(HOME_DIR)/repo
-WORKDIR=$(REPO_DIR)/$(APP_NAME)
+WORKDIR=$(REPO_DIR)
 USER=dev
 
 CONTAINER_ENV_VARS= \
@@ -33,7 +33,7 @@ CONTAINER_ENV_VARS= \
 
 INTERACTIVE_SESSION=\
   -v $$PWD/home_dir:$(HOME_DIR) \
-  -v $$PWD/..:$(REPO_DIR) \
+  -v $$PWD:$(REPO_DIR) \
   --rm \
   --workdir=$(WORKDIR) \
   --user=$(USER) \

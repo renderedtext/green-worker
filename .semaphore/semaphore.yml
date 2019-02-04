@@ -1,0 +1,23 @@
+version: v1.0
+name: GreenWorker pipeline
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+
+blocks:
+  - name: "Build and test"
+    task:
+      jobs:
+      - name: GreenWorker
+        commands:
+          - checkout
+          - cache restore green_worker-deps-test-$(checksum mix.lock),green_worker-deps-test-
+          - cache restore green_worker-build-test-$(checksum mix.lock),green_worker-build-test-
+          # - make lint-root
+          - make console USER=root MIX_ENV=test CMD="mix do local.hex --force, local.rebar --force, deps.get"
+          - make postgres.run USER=root MIX_ENV=test
+          - make console USER=root MIX_ENV=test CMD="mix test"
+          - echo "done"
+          - cache store green_worker-deps-test-$(checksum mix.lock) deps/
+          - cache store green_worker-build-test-$(checksum mix.lock) _build/

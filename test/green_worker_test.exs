@@ -137,7 +137,6 @@ defmodule GreenWorkerTest do
 
     assert nil == GreenWorker.Internal.whereis(Support.BasicTransitionWithChangeset, id1)
 
-
     assert {:ok, pid2} = GreenWorker.store_and_start_supervised(Support.NoActionWorker, ctx)
 
     assert pid != pid2

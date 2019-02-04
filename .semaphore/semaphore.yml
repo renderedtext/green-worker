@@ -14,7 +14,7 @@ blocks:
           - checkout
           - cache restore green_worker-deps-test-$(checksum mix.lock),green_worker-deps-test-
           - cache restore green_worker-build-test-$(checksum mix.lock),green_worker-build-test-
-          # - make lint-root
+          - make lint-root
           - make console USER=root MIX_ENV=test CMD="mix do local.hex --force, local.rebar --force, deps.get"
           - make postgres.run USER=root MIX_ENV=test
           - make console USER=root MIX_ENV=test CMD="mix test"

@@ -12,7 +12,6 @@ defmodule Support.BasicTransition do
 
     ctx
     |> put_store(:state, "pending")
-    |> IO.inspect(label: "GGGGGGGGGGGGGGG state exit")
   end
 
   handle state: "pending" do
@@ -22,7 +21,6 @@ defmodule Support.BasicTransition do
 
       ctx
       |> put_store(:state, "done")
-      |> IO.inspect(label: "GGGGGGGGGGGGGGG state exit")
     else
       ctx
     end
@@ -31,7 +29,7 @@ defmodule Support.BasicTransition do
   handle state: "done" do
     PubSub.publish(BasicTransition, {ctx.store.id, "done"})
 
-    ctx |> IO.inspect(label: "GGGGGGGGGGGGGGG state exit")
+    ctx
   end
 
   @impl true

@@ -12,9 +12,7 @@ defmodule Support.AlternativeWorker do
   handle state: "initial_state" do
     ctx
     |> put_cache(%{id: ctx.store.id_field})
-    |> IO.inspect(label: "GGGGGGGGGGGGGGGGGGGG 0")
     |> put_store(:state_field, "really_done")
-    |> IO.inspect(label: "GGGGGGGGGGGGGGGGGGGG 1")
   end
 
   handle state: "really_done", return: :default

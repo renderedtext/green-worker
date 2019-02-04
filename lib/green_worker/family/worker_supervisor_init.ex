@@ -1,4 +1,8 @@
 defmodule GreenWorker.Family.WorkerSupervisorInit do
+  @moduledoc """
+  Start processes for all workers in nonterminal statewhen supervisor is started.
+  """
+
   use GenServer
 
   alias GreenWorker.Queries
@@ -18,11 +22,7 @@ defmodule GreenWorker.Family.WorkerSupervisorInit do
   - `config` - options specified when worker was defined
   """
   def init(opts = [gw_module: gw_module, config: config]) do
-    opts
-    |> IO.inspect(label: "ZZZZZZZZZZZZZZ gw_name")
-
     start_all_non_finished_workers(gw_module, config)
-    |> IO.inspect(label: "ZZZZZZZZZZZZZZ all w")
 
     {:ok, opts}
   end
@@ -31,9 +31,6 @@ defmodule GreenWorker.Family.WorkerSupervisorInit do
   Starts all workers that are not in terminal state.
   """
   def start_all_non_finished_workers(gw_module, config) do
-    gw_module
-    |> IO.inspect(label: "ZZZZZZZZZZZZZZ gw_module")
-
     Queries.get_all_non_finished_workers(
       config.schema,
       config.repo,

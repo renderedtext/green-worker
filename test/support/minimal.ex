@@ -8,11 +8,11 @@ defmodule Support.Minimal do
 
   @impl true
   def context_handler(ctx = %{:store => %{:state => "init"}}) do
-    ctx |> IO.inspect(label: "GGGGGGGGGGGGGGG state")
+    ctx
   end
 
   @impl true
   def context_handler(ctx = %{store: %{:state => "done"}}) do
-    ctx |> IO.inspect(label: "GGGGGGGGGGGGGGGGGGGGGGG state2")
+    ctx
   end
 end

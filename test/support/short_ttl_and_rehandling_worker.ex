@@ -14,10 +14,9 @@ defmodule Support.ShortTtlAndRehandlingWorker do
     ctx
     |> put_cache(:counter, counter)
     |> put_store(:state, state)
-    |> IO.inspect(label: "FFFFFFFFFFFFFFFFFFFFf")
   end
 
   handle state: "done" do
-    ctx |> IO.inspect(label: "GGGGGGGGGGGGGGG ShortTtlAndRehandlingWorker state")
+    ctx
   end
 end

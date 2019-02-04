@@ -1,7 +1,5 @@
 defmodule GreenWorker.Macros do
-  @moduledoc """
-
-  """
+  @moduledoc false
 
   defmacro handle(state: state, return: :default) do
     quote do

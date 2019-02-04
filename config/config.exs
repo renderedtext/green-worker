@@ -1,5 +1,6 @@
 use Mix.Config
 
+# Needed for tests.
 config :green_worker, ecto_repos: [Support.EctoRepo]
 
 config :swarm,

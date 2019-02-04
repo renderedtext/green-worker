@@ -8,6 +8,6 @@ defmodule Support.NoActionWorker do
 
   @impl true
   def context_handler(ctx) do
-    ctx |> IO.inspect(label: "GGGGGGGGGGGGGGG state")
+    ctx
   end
 end

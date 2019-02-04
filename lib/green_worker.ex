@@ -107,11 +107,8 @@ defmodule GreenWorker do
   of inactivity.
   """
 
-  alias GreenWorker.Util
-  alias GreenWorker.Queries
-  alias GreenWorker.Internal
-  alias GreenWorker.Ctx
   alias GreenWorker.Exceptions.DeadlineExceededError
+  alias GreenWorker.{Ctx, Util, Internal, Queries}
 
   require GreenWorker.Internal
 
@@ -144,7 +141,7 @@ defmodule GreenWorker do
       use GenServer
 
       import GreenWorker.Macros
-      import GreenWorker.Ctx, only: unquote(GreenWorker.Ctx.auto_import())
+      import Ctx, only: unquote(Ctx.auto_import())
 
       @state_field_name unquote(state_field_name)
 
@@ -212,7 +209,7 @@ defmodule GreenWorker do
           store_data ->
             schedule_handling(id)
 
-            {:ok, GreenWorker.Ctx.new(store_data)}
+            {:ok, Ctx.new(store_data)}
         end
       end
 
@@ -272,9 +269,9 @@ defmodule GreenWorker do
 
       defp get_state_name(ctx), do: ctx.store.unquote(state_field_name)
 
-      defp name(id), do: GreenWorker.Internal.via_tuple(__MODULE__, id)
+      defp name(id), do: Internal.via_tuple(__MODULE__, id)
 
-      defp get_id(ctx), do: GreenWorker.Internal.get_id(ctx, unquote(key_field_name))
+      defp get_id(ctx), do: Internal.get_id(ctx, unquote(key_field_name))
 
       defp load(id) do
         Keyword.put([], unquote(key_field_name), id)
@@ -294,8 +291,8 @@ defmodule GreenWorker do
     %{key_field_name: key_field_name} = family.get_config()
 
     id =
-      GreenWorker.Ctx.new(initial)
-      |> GreenWorker.Internal.get_id(key_field_name)
+      Ctx.new(initial)
+      |> Internal.get_id(key_field_name)
 
     if pid = whereis(family, id) do
       {:ok, pid}
@@ -366,7 +363,7 @@ defmodule GreenWorker do
     Return pid of specified worker if running or nil otherwise.
   """
   def whereis(family, id) do
-    GreenWorker.Internal.whereis(family, id)
+    Internal.whereis(family, id)
   end
 
   defp insert_idempotency(insert_resp = {:ok, _}, _key), do: insert_resp

@@ -1,4 +1,6 @@
 defmodule GreenWorker.Queries do
+  @moduledoc false
+
   def read(query_term, schema, repo) do
     repo.get_by(schema, query_term)
   end
@@ -6,7 +8,6 @@ defmodule GreenWorker.Queries do
   def insert(to_store, _changeset = {m, f}, schema, repo) do
     call_changeset(m, f, [struct(schema), to_store])
     |> repo.insert()
-    |> IO.inspect(label: "DDDDDDDDDDDDDDDDDDD insert")
   end
 
   def update(%{store: stored}, %{store: to_store}, _changeset = {m, f}, repo) do
@@ -25,6 +26,6 @@ defmodule GreenWorker.Queries do
     apply(m, f, [data, to_map(params)])
   end
 
-  defp to_map(%_{} = v), do: Map.from_struct(v)
-  defp to_map(%{} = v), do: v
+  defp to_map(v = %_{}), do: Map.from_struct(v)
+  defp to_map(v = %{}), do: v
 end

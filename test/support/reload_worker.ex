@@ -6,6 +6,12 @@ defmodule Support.ReloadWorker do
     repo: Support.EctoRepo
 
   handle state: "init" do
+    ctx
+    |> put_cache(:a, "qwerty")
+    |> put_store(:state, "store_update")
+  end
+
+  handle state: "store_update" do
     ctx.store
     |> Support.BasicSchema.changeset(%{state: "next_state"})
     |> Support.EctoRepo.update

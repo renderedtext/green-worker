@@ -252,7 +252,7 @@ defmodule GreenWorker do
       defp handle_context_post_processing(ctx, new_ctx) do
         cond do
           new_ctx.store == :reload ->
-            reload_from_store(ctx)
+            reload_from_store(ctx, new_ctx)
 
           ctx.store != new_ctx.store ->
             persist_to_store(ctx, new_ctx)
@@ -262,9 +262,9 @@ defmodule GreenWorker do
         end
       end
 
-      defp reload_from_store(ctx) do
+      defp reload_from_store(ctx, new_ctx) do
         schedule_handling(get_id(ctx))
-        Ctx.new(load(ctx.store.unquote(key_field_name)))
+        Ctx.new(load(ctx.store.unquote(key_field_name)), new_ctx.cache)
       end
 
       defp persist_to_store(ctx, new_ctx) do

@@ -252,17 +252,26 @@ defmodule GreenWorker do
       defp handle_context_post_processing(ctx, new_ctx) do
         cond do
           new_ctx.store == :reload ->
-            Ctx.new(load(ctx.store.unquote(key_field_name)))
+            reload_from_store(ctx)
 
           ctx.store != new_ctx.store ->
-            Internal.assert_state_field_changed(ctx, new_ctx, unquote(state_field_name))
-            schedule_handling(get_id(ctx))
-            {:ok, _} = Queries.update(ctx, new_ctx, unquote(changeset), unquote(repo))
-            new_ctx
+            persist_to_store(ctx, new_ctx)
 
           true ->
             new_ctx
         end
+      end
+
+      defp reload_from_store(ctx) do
+        schedule_handling(get_id(ctx))
+        Ctx.new(load(ctx.store.unquote(key_field_name)))
+      end
+
+      defp persist_to_store(ctx, new_ctx) do
+        Internal.assert_state_field_changed(ctx, new_ctx, unquote(state_field_name))
+        schedule_handling(get_id(ctx))
+        {:ok, _} = Queries.update(ctx, new_ctx, unquote(changeset), unquote(repo))
+        new_ctx
       end
 
       defp in_terminal_state?(ctx), do: get_state_name(ctx) in unquote(terminal_states)
